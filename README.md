@@ -1,0 +1,2 @@
+### HIV project data pipeline
+This project is a data pipeline that processes data from the HIV project. This project pulls data from the REDCAP HIV projects and stores it in sqlserver. The data os then pulled into Tableau reports for Decode Reports and into labkey.
