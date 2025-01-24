@@ -1,0 +1,7 @@
+﻿Variable / Field Name,Form Name,Section Header,Field Type,Field Label,"Choices, Calculations, OR Slider Labels",Field Note,Text Validation Type OR Show Slider Number,Text Validation Min,Text Validation Max,Identifier?,Branching Logic (Show field only if...),Required Field?,Custom Alignment,Question Number (surveys only),Matrix Group Name,Matrix Ranking?,Field Annotation
+source_information_complete,source_information,,text,source_information_complete,,,,,,,,,,,,,
+present_illness_complete,present_illness,,text,present_illness_complete,,,,,,,,,,,,,
+past_history_complete,past_history,,text,past_history_complete,,,,,,,,,,,,,
+hospital_course_complete,hospital_course,,text,hospital_course_complete,,,,,,,,,,,,,
+diagnostic_testing_complete,diagnostic_testing,,text,diagnostic_testing_complete,,,,,,,,,,,,,
+medications_and_interventions_complete,medications_and_interventions,,text,medications_and_interventions_complete,,,,,,,,,,,,,
