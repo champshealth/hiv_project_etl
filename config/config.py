@@ -23,7 +23,7 @@ JOB_DATE = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 #  and add the following files to the data directory
 REDCAP_DATA_DICT_FILE_11 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject1_1_DataDict_2024-12-11.csv')
 REDCAP_DATA_DICT_FILE_CA = os.path.join(DATA_DICT_DIR, 'AdultHIVClinicalAbstr_DataDict_2024-10-30.csv') 
-REDCAP_DATA_DICT_FILE_31 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject3_1_DataDict_2024-11-07.csv')
+REDCAP_DATA_DICT_FILE_31 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject3_1_DataDict_2025-01-28.csv')
 
 # these files are appended to the data dict files since they are not included in the REDCap data dictionary exports
 #  but are found in the data exports. Example: form_complete fields
@@ -41,6 +41,12 @@ DATA_TABLE_11 = 'HIVProject1_1_stg'
 
 DATA_DICT_TABLE_31 = 'HIVDataDictProj3_1'
 DATA_TABLE_31 = 'HIVProject3_1_stg'
+
+DATA_DICT_TABLE_CA = 'HIVDataDictClinicalAbstr'
+DATA_TABLE_CA = 'HIVClinicalAbstract_stg'
+
+CLINICAL_ABSTRACTION_VIEW = 'vw_HIVClinicalAbstraction'
+CLINICAL_ABSTRACTION_FORM_COMPLETE_VIEW = 'vw_HIVClinicalAbstractionFormComplete'
 
 # deathnotification data objects
 HIV_DEATH_NOTIFICATION_VIEW = 'vw_HIVDeathNotification'
