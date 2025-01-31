@@ -60,5 +60,8 @@ MITS_PROCEDURE_VIEW_NAME = 'vw_HIVMITSProcedure'
 # MITS Specimen Collection data objects
 MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 
+# cpl widget data objects
+CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
+
 # TODO: move this to the .env file later
 CONN = connect_db.conn_qa

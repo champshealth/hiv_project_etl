@@ -8,6 +8,7 @@ from src.db_upsert_mits_proc_data import upsert_mits_proc_data
 from src.db_upsert_death_notif_data import upsert_death_notif_data
 from src.db_upsert_mits_specimen_collect import upsert_mits_specimen_collect
 from src.db_load_abstraction import db_load_clinical_abstraction
+from src.db_upsert_cplwidget_data import upsert_cpl_widget_aggregate
 
 if __name__ == '__main__':
     logger.info('Starting main script')
@@ -31,6 +32,9 @@ if __name__ == '__main__':
             df = redcap_api_export(REDCAP_API_TOKEN_CA, REDCAP_EXPORT_FILE_CA)
             db_load_clinical_abstraction(df=df)
 
+            # CPL Widget upsert
+            upsert_cpl_widget_aggregate()
+            
         logger.info('Finished main script')
     except Exception as e:
         logger.error(f'ERROR: {e}')
