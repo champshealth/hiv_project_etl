@@ -13,6 +13,8 @@ REDCAP_API_TOKEN_CA = os.getenv('REDCAP_API_TOKEN_CA')
 REDCAP_API_TOKEN_31 = os.getenv('REDCAP_API_TOKEN_31')
 REDCAP_URL = os.getenv('REDCAP_URL')
 
+ETL_USER_ID = 'HIV_PROJECT_ETL'
+
 DATA_DIR = 'data'
 LOG_DIR = 'logs'
 DATA_DICT_DIR = 'data_dictionaries'

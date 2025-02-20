@@ -2,7 +2,7 @@
 # adult_hiv_study
 # 1. Merge the data from the view vw_HIVConsentTracking to the ConsentTracking table
 import sqlalchemy as sa
-from config.config import CONN, CONSENTTRACK_VIEW_NAME, DB_SCHEMA as SCHEMA_NAME
+from config.config import CONN, CONSENTTRACK_VIEW_NAME, DB_SCHEMA as SCHEMA_NAME, ETL_USER_ID
 from src.logging_config import logger
 
 # engine = connect_db.conn_qa
@@ -24,11 +24,14 @@ def upsert_consent_records():
                         Target.ConsentType = Source.ConsentType,
                         Target.ConsentDate = Source.ConsentDate,
                         Target.ModifiedOn = Source.CreatedOn,
-                        Target.UploadedOn = Source.CreatedOn
+                        Target.UploadedOn = Source.CreatedOn,
+                        Target.ModifiedBy = '{ETL_USER_ID}'
             when not matched then
-                insert (Id, ConsentTrackingSiteId, ReportId, CatchmentId, ChampsId, ConsentGranted, ConsentType, ConsentDate, SiteId, [FileName], CreatedOn, ModifiedOn, Uploadedon, Active)
+                insert (Id, ConsentTrackingSiteId, ReportId, CatchmentId, ChampsId, ConsentGranted, ConsentType, ConsentDate, SiteId, [FileName], 
+                        CreatedOn, ModifiedOn, Uploadedon, Active,  CreatedBy, UploadedBy)
                 values (Source.Id, Source.ConsentTrackingSiteId, Source.ReportId, Source.CatchmentId, Source.ChampsId, Source.ConsentGranted, 
-                Source.ConsentType, Source.ConsentDate, Source.SiteId, Source.FileName, Source.CreatedOn, Source.CreatedOn, Source.CreatedOn, Source.Active)
+                Source.ConsentType, Source.ConsentDate, Source.SiteId, Source.FileName, Source.CreatedOn, Source.CreatedOn, Source.CreatedOn, Source.Active,
+                '{ETL_USER_ID}', '{ETL_USER_ID}')
             ; 
         """)
         # ConsentTracking set duplicate records to inactive

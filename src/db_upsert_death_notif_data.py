@@ -2,7 +2,7 @@
 import pandas as pd
 import sqlalchemy as sa
 from src.logging_config import logger
-from config.config import CONN, HIV_DEATH_NOTIFICATION_VIEW, DB_SCHEMA as SCHEMA_NAME
+from config.config import CONN, HIV_DEATH_NOTIFICATION_VIEW, DB_SCHEMA as SCHEMA_NAME, ETL_USER_ID
 
 def upsert_death_notif_data() -> None:
     logger.info('Starting upsert_death_notif_data')
@@ -20,13 +20,14 @@ def upsert_death_notif_data() -> None:
         then
             update set Target.DateOfDeathNotification = Source.DateOfDeathNotification,
                         Target.ModifiedOn = Source.ModifiedOn,
-                        Target.UploadedOn = Source.UploadedOn
+                        Target.UploadedOn = Source.UploadedOn,
+                        Target.ModifiedBy = '{ETL_USER_ID}'
         when not matched then
             insert (Id, DeathNotificationSiteId, ReportId, CatchmentId, DateOfDeathNotification, 
                         SiteId, [FileName], CreatedOn, ModifiedOn, UploadedOn, Active, CreatedBy, UploadedBy)
             values (Source.Id, Source.DeathNotificationSiteId, Source.ReportId, Source.CatchmentId, Source.DateOfDeathNotification, 
                         Source.SiteId, Source.FileName, Source.CreatedOn, Source.ModifiedOn, Source.UploadedOn, Source.Active,
-                        'HIV_PROJECT_ETL', 'HIV_PROJECT_ETL')  
+                        '{ETL_USER_ID}', '{ETL_USER_ID}')  
                         ;
         """)
     
