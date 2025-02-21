@@ -14,7 +14,7 @@ if __name__ == '__main__':
     logger.info('Starting main script')
     try:
         logger.info('Starting redcap_api_export.py')
-        df = redcap_api_export(REDCAP_API_TOKEN_11, REDCAP_EXPORT_FILE_11)
+        df = redcap_api_export([REDCAP_API_TOKEN_11], REDCAP_EXPORT_FILE_11)
         logger.info('Finished redcap_api_export.py')
         if not df.empty:
             df2 = db_load_project_1_1(df=df)
@@ -23,13 +23,13 @@ if __name__ == '__main__':
             del df
 
             # # 3.1 data load and upsert
-            df = redcap_api_export(REDCAP_API_TOKEN_31, REDCAP_EXPORT_FILE_31)
+            df = redcap_api_export([REDCAP_API_TOKEN_31], REDCAP_EXPORT_FILE_31)
             db_load_project_3_1(df=df)
             upsert_mits_proc_data()
             upsert_mits_specimen_collect()
 
             # # clinical abstraction data load
-            df = redcap_api_export(REDCAP_API_TOKEN_CA, REDCAP_EXPORT_FILE_CA)
+            df = redcap_api_export([REDCAP_API_TOKEN_CA], REDCAP_EXPORT_FILE_CA)
             db_load_clinical_abstraction(df=df)
 
             # CPL Widget upsert

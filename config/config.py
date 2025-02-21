@@ -20,6 +20,7 @@ LOG_DIR = 'logs'
 DATA_DICT_DIR = 'data_dictionaries'
 JOB_ID = uuid.uuid4()
 JOB_DATE = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+FILE_DATETIME = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 # Pre-requisite: these redcap data dict files should be in the data_dictionaires directory
 #  and add the following files to the data directory
@@ -33,9 +34,11 @@ REDCAP_DATA_DICT_APPEND_FILE_11 = os.path.join(DATA_DICT_DIR,'AdultHIVProject1_1
 REDCAP_DATA_DICT_APPEND_FILE_CA = os.path.join(DATA_DICT_DIR,'AdultHIVClinicalAbstr_DataDict_append.csv')
 REDCAP_DATA_DICT_APPEND_FILE_31 = os.path.join(DATA_DICT_DIR,'AdultHIVProject3_1_DataDict_append.csv')
 
-REDCAP_EXPORT_FILE_11 = os.path.join(DATA_DIR, f'redcap_export_11_{JOB_ID}.csv')
-REDCAP_EXPORT_FILE_CA = os.path.join(DATA_DIR, f'redcap_export_ca_{JOB_ID}.csv')
-REDCAP_EXPORT_FILE_31 = os.path.join(DATA_DIR, f'redcap_export_31_{JOB_ID}.csv')
+# redcap data export files for backup
+# these files will be strored as parquet files
+REDCAP_EXPORT_FILE_11 = os.path.join(DATA_DIR, f'redcap_export_11_{FILE_DATETIME}_{JOB_ID}')
+REDCAP_EXPORT_FILE_CA = os.path.join(DATA_DIR, f'redcap_export_ca_{FILE_DATETIME}_{JOB_ID}')
+REDCAP_EXPORT_FILE_31 = os.path.join(DATA_DIR, f'redcap_export_31_{FILE_DATETIME}_{JOB_ID}')
 
 DB_SCHEMA = os.getenv('DB_SCHEMA')
 DATA_DICT_TABLE_11 = 'HIVDataDictProj1_1'
