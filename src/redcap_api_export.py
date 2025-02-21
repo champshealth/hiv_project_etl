@@ -1,6 +1,8 @@
 # redcap_api_export.py
 # this script will export the REDCap API data as a pandas dataframe
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import pandas as pd
 from config.config import REDCAP_URL
 from requests.exceptions import RequestException
@@ -8,6 +10,19 @@ from src.logging_config import logger
 
 def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
     """Export the REDCap API data as a pandas dataframe."""
+
+    # Configure retry strategy
+    retry_strategy = Retry(
+        total=3,  # number of retries
+        backoff_factor=1,  # wait 1, 2, 4 seconds between retries
+        status_forcelist=[500, 502, 503, 504]  # HTTP status codes to retry on
+    )
+    
+    # Create session with retry strategy
+    session = requests.Session()
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
     all_dfs = []
     for redcap_token in redcap_tokens:
@@ -27,7 +42,7 @@ def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
         }
 
         try:
-            response = requests.post(REDCAP_URL, data=data)
+            response = session.post(REDCAP_URL, data=data)
             response.raise_for_status()  # Raise an exception for non-200 status codes
 
             data = response.json()
