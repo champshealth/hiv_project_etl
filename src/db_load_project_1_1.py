@@ -11,11 +11,12 @@ from src.logging_config import logger
 def transform_project_1_1(df: pd.DataFrame) -> pd.DataFrame:
     df = df.astype(str)
     conn = duckdb.connect()
-    conn.execute(" CREATE TABLE redcap_hiv_project1_1 AS SELECT * FROM df ")
-    conn.execute(" COPY redcap_hiv_project1_1 TO 'data/redcap_hiv_project1_1.parquet' (FORMAT 'parquet') ")
+    conn.execute(" CREATE TABLE redcap_hiv_project1_1_df AS SELECT * FROM df ")
+    # conn.execute(" COPY redcap_hiv_project1_1 TO 'data/redcap_hiv_project1_1.parquet' (FORMAT 'parquet') ")
     conn.execute(f"""CREATE or REPLACE table redcap_hiv_project1_1 as
                     select record,field_name,value 
-                    FROM read_parquet('data/redcap_hiv_project1_1.parquet')
+                    FROM redcap_hiv_project1_1_df
+                    -- FROM read_parquet('data/redcap_hiv_project1_1.parquet')
                 """)
     
     # extract key fields site_id, catchment_id and champs_id from the exported data
