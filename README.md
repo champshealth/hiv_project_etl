@@ -7,3 +7,7 @@ data/ - contains the data for the project
 logs/ - contains the logs for the project
 config/ - contains the configuration files for the project
 include/ - contains the include files for the project
+
+<!-- Database objects deployment -->
+- [ ] Create database objects using the ddl files in the `src/ddl_definitions` directory
+- [ ] load the Tableau report definitions from the `rpt_HIVReportName.csv` file
