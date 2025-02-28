@@ -21,7 +21,8 @@ class connect_db():
     password = db_pwd
     ss_driver = 'ODBC Driver 18 for SQL Server'
     
-    conn_qa = create_engine(f'mssql+pyodbc://{username}:{password}@{dsn}')
+    conn_qa = create_engine(f'mssql+pyodbc://{username}:{password}@champs_qa')
+    conn_stg = create_engine(f'mssql+pyodbc://{username}:{password}@champs_stg')
 
 # class connect_db():
 #     # CHAMPS SQL Sever  database connections.

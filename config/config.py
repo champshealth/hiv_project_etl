@@ -5,13 +5,17 @@ import datetime
 from include.ci_utils import connect_db
 dotenv.load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-print(BASE_DIR)
+
 # pre-requisite: create a .env file in the root directory of the project
 # and add the following environment variables
 REDCAP_API_TOKEN_11 = os.getenv('REDCAP_API_TOKEN_11')
 REDCAP_API_TOKEN_CA = os.getenv('REDCAP_API_TOKEN_CA')
 REDCAP_API_TOKEN_31 = os.getenv('REDCAP_API_TOKEN_31')
 REDCAP_URL = os.getenv('REDCAP_URL')
+
+LABKEY_SERVER_URL = os.getenv('LABKEY_SERVER_URL')
+LABKEY_API_KEY = os.getenv('LABKEY_API_KEY')
+LABKEY_CONTAINER_PATH = os.getenv('LABKEY_CONTAINER_PATH')
 
 ETL_USER_ID = 'HIV_PROJECT_ETL'
 
@@ -69,4 +73,5 @@ MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 
 # TODO: move this to the .env file later
-CONN = connect_db.conn_qa
+# CONN = connect_db.conn_qa
+CONN = connect_db.conn_stg

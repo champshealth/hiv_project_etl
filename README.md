@@ -9,5 +9,6 @@ config/ - contains the configuration files for the project
 include/ - contains the include files for the project
 
 <!-- Database objects deployment -->
+- [ ] Generate the db object definitions using the `create_ddl.py` script
 - [ ] Create database objects using the ddl files in the `src/ddl_definitions` directory
 - [ ] load the Tableau report definitions from the `rpt_HIVReportName.csv` file
