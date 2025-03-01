@@ -6,6 +6,7 @@ data_dict_file = 'data_dictionaries/AdultHIVProject1_1_DataDict_2024-12-11.csv'
 output_csv_file = 'data/pivoted_project_1_1_data.csv'  # Output file path
 
 # Read the CSV to get the field names
+# exclude any fields that are  identifiers
 df_csv = pd.read_csv(data_dict_file)
 field_names = df_csv[df_csv['Identifier?'].isnull()]['Variable / Field Name'].tolist()
 
