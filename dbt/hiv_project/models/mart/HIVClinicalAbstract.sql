@@ -2,9 +2,9 @@
   config(
     materialized='incremental',
     schema='hiv',
-    unique_key=['SiteId', 'ChampsId', 'FieldName'],
+    unique_key=['SiteId', 'ChampsId', 'FieldName', 'FieldValue'],
     incremental_strategy='merge',
-    merge_update_columns=['Id', 'FieldValue', 'LastUpdated', 'IsDeleted']
+    merge_update_columns=['Id', 'LastUpdated', 'IsDeleted']
   )
 }}
 
@@ -43,6 +43,7 @@ deleted_records AS (
           COALESCE(s.SiteId, '') = COALESCE(t.SiteId, '')
           AND s.ChampsId = t.ChampsId
           AND s.FieldName = t.FieldName
+          AND s.FieldValue = t.FieldValue
       )
     {% else %}
     -- Empty set for initial load

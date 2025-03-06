@@ -2,9 +2,9 @@
   config(
     materialized='incremental',
     schema='hiv',
-    unique_key=['ChampsId', 'RepeatInstrument', 'RepeatInstance', 'FieldName'],
+    unique_key=['ChampsId', 'RepeatInstrument', 'RepeatInstance', 'FieldName', 'FieldValue'],
     incremental_strategy='merge',
-    merge_update_columns=['Id', 'FieldValue', 'LastUpdated', 'IsDeleted']
+    merge_update_columns=['Id', 'LastUpdated', 'IsDeleted']
   )
 }}
 
@@ -46,6 +46,7 @@ deleted_records AS (
           AND COALESCE(s.RepeatInstrument, '') = COALESCE(t.RepeatInstrument, '')
           AND COALESCE(s.RepeatInstance, '') = COALESCE(t.RepeatInstance, '')
           AND s.FieldName = t.FieldName
+          AND s.FieldValue = t.FieldValue
       )
     {% else %}
     -- Empty set for initial load
