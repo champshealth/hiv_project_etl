@@ -2,7 +2,15 @@
   config(
     materialized='table',
     schema='hiv',
-    full_refresh=true
+    full_refresh=true,
+    column_types={
+      'ReportViewName': 'VARCHAR(200)',
+      'ReportViewId': 'VARCHAR(100)', 
+      'ReportSequence': 'TINYINT',
+      'ReportUri': 'VARCHAR(200)',
+      'ReportUriHeader': 'VARCHAR(200)',
+      'PackageType': 'VARCHAR(50)'
+    }
   )
 }}
 
@@ -13,23 +21,12 @@ This table supports report generation for the HIV project.
 */
 
 -- Load data from CSV file
-WITH source_data AS (
-    SELECT 
-        ReportViewName,
-        ReportViewId,
-        ReportSequence,
-        ReportUri,
-        ReportUriHeader,
-        PackageType
-    FROM {{ ref('seed_rpt_HIVReportName') }}
-)
-
 SELECT
     ReportViewName,
     ReportViewId,
-    CAST(ReportSequence AS INT) AS ReportSequence,
+    ReportSequence,
     ReportUri,
     ReportUriHeader,
     PackageType,
     GETDATE() AS CreatedOn
-FROM source_data
+FROM {{ ref('seed_rpt_HIVReportName') }}

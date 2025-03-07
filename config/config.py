@@ -73,5 +73,5 @@ MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 
 # TODO: move this to the .env file later
-CONN = connect_db.conn_qa
-# CONN = connect_db.conn_stg
+# CONN = connect_db.conn_qa
+CONN = connect_db.conn_stg

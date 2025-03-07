@@ -53,9 +53,9 @@ seeds:
     +schema: stg
     seed_rpt_HIVReportName:
       +column_types:
-        ReportViewName: varchar(255)
+        ReportViewName: varchar(200)
         ReportViewId: varchar(100)
-        ReportSequence: integer
-        ReportUri: varchar(255)
-        ReportUriHeader: varchar(255)
+        ReportSequence: tinyint
+        ReportUri: varchar(200)
+        ReportUriHeader: varchar(200)
         PackageType: varchar(10)
