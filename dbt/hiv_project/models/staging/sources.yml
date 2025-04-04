@@ -90,6 +90,16 @@ sources:
         
       - name: HIVClinicalAbstract_stg
         description: "HIV Clinical Abstraction data in EAV format"
+      
+      - name: seed_rpt_HIVReportName
+        description: "Seed table containing HIV report name mappings"
+        columns:
+          - name: ReportId
+            description: "Unique identifier for the report"
+          - name: ReportName
+            description: "Name of the HIV report"
+            tests:
+              - not_null
         
   - name: hiv_data_views
     description: "Views for HIV data processing"

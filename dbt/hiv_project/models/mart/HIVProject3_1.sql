@@ -1,7 +1,6 @@
 {{
   config(
     materialized='incremental',
-    schema='hiv',
     unique_key=['ChampsId', 'RepeatInstrument', 'RepeatInstance', 'FieldName', 'FieldValue'],
     incremental_strategy='merge',
     merge_update_columns=['Id', 'LastUpdated', 'IsDeleted']

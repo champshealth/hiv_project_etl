@@ -1,7 +1,6 @@
 {{
   config(
     materialized='table',
-    schema='hiv',
     full_refresh=true,
     column_types={
       'ReportViewName': 'VARCHAR(200)',
@@ -29,4 +28,5 @@ SELECT
     ReportUriHeader,
     PackageType,
     GETDATE() AS CreatedOn
-FROM {{ ref('seed_rpt_HIVReportName') }}
+FROM {{ source('hiv_data_staging' ,'seed_rpt_HIVReportName') }}
+

@@ -3,6 +3,8 @@
 # name or the intended use of these models
 name: 'hiv_project'
 version: '1.0.0'
+config-version: 2
+
 
 # This setting configures which "profile" dbt uses for this project.
 profile: 'hiv_project'
@@ -27,7 +29,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   hiv_project:
     # Default schema setting for all models
-    +schema: hiv
+    # +schema: hiv
     
     # Staging models use the existing "stg" schema
     staging:
@@ -41,7 +43,7 @@ models:
       
     # Final models in the hiv schema
     mart:
-      +schema: hiv
+      # +schema: hiv
       +materialized: table
       
     # Keep example directory configuration

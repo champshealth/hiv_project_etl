@@ -1,7 +1,6 @@
 {{
   config(
-    materialized='view',
-    schema='dbo'  
+    materialized='view'
   )
 }}
 

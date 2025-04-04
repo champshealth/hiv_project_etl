@@ -1,7 +1,6 @@
 {{
   config(
     materialized='table',
-    schema='hiv',
     full_refresh=true
   )
 }}
