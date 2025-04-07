@@ -5,7 +5,7 @@ This project is a data pipeline that processes data from the HIV project. This p
 ```mermaid
 graph TD
     A[REDCap HIV Projects] -->|Python ETL| B[SQL Server Raw Data]
-    B -->|dbt Transformations| C[Processed Tables & Views (sql server)]
+    B -->|dbt Transformations| C[Processed Tables & Views]
     C -->|Views & Models| D[Reporting Layer]
     D -->|Tableau| E[Decode Reports]
     D -->|Python Export| F[Labkey Integration]
