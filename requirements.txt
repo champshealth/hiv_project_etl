@@ -1,0 +1,14 @@
+wheel==0.40.0
+# pandas==2.0.3
+pandas>=2.1.0
+numpy==1.23.5
+python-dotenv
+python-json-logger
+sqlalchemy
+duckdb
+pyarrow>=14.0.1
+labkey==3.3.0
+pyodbc
+uv
+pip
+dbt-sqlserver

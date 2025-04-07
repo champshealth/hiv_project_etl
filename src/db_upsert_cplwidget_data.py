@@ -88,7 +88,7 @@ def upsert_cpl_widget_aggregate() -> None:
                         join Site s on cs.SiteId = s.Id
                         ) as source
                 on target.ChampsId = source.ChampsId
-                when matched then
+                when matched  and StatusText = 'Pending' then
                     update set
                         target.SiteId = source.SiteId,
                         target.FileName = 'adult_hiv_study',
@@ -98,9 +98,9 @@ def upsert_cpl_widget_aggregate() -> None:
                         target.ModifiedBy = 'HIV_PROJECT_ETL'
                 when not matched then
                     insert (Id, JobId, ProcessId, SiteId, FileName, ChampsId, 
-                            CreatedOn, CreatedBy, UploadedOn, UploadedBy, ModifiedOn, ModifiedBy, Active, Valid,  ConsentType, StatusText)
+                            CreatedOn, CreatedBy, UploadedOn, UploadedBy, ModifiedOn, ModifiedBy, Active, Valid,  ConsentType, Status, StatusText)
                     values (newid(), 'HIV_PROJECT_ETL', 'HIV_PROJECT_ETL', source.SiteId, 'adult_hiv_study', source.ChampsId, 
-                            GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', 1, 1, source.ConsentType, 'Pending')
+                            GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', 1, 1, source.ConsentType,         1, 'Pending')
                     ;
         """)
 

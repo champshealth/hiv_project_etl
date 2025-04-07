@@ -1,0 +1,118 @@
+version: 2
+
+models:
+  - name: HIVProject1_1
+    description: "HIV Project 1.1 staging data"
+    data_tests:
+      - assert_table_has_rows:
+          min_rows: 100
+      - test_soft_delete_percentage:
+          max_percentage: 25
+          # description: "Alert if more than 25% of records are marked as deleted"
+          config:
+            severity: warn
+    columns:
+      - name: SiteId
+        description: "Site identifier"
+        data_tests:
+          - not_null
+      - name: CatchmentId
+        description: "Catchment identifier"
+        data_tests:
+          - not_null
+      - name: ChampsId
+        description: "CHAMPS identifier"
+        data_tests:
+          - not_null
+      - name: FieldName
+        description: "Name of the field"
+        data_tests:
+          - not_null
+      - name: IsDeleted
+        description: "Flag indicating if record has been deleted from source"
+      - name: LastUpdated
+        description: "Last updated timestamp"
+        data_tests:
+          - not_null
+          - date_is_before_current
+
+  - name: HIVProject3_1
+    description: "HIV Project 3.1 data in EAV format"
+    data_tests:
+      #  description: "Alert if more than 25% of records are marked as deleted"
+      - assert_table_has_rows:
+          min_rows: 100
+      - test_soft_delete_percentage:
+          max_percentage: 25
+
+          config:
+            severity: warn
+    columns:
+      - name: Id
+        description: "Record identifier"
+        data_tests:
+          - not_null
+    # - name: SiteId
+      #   description: "Site identifier"
+      #   data_tests:
+      #     - not_null
+      - name: ChampsId
+        description: "CHAMPS identifier"
+        data_tests:
+          - not_null
+      - name: FieldName
+        description: "Field name from REDCap instrument"
+        data_tests:
+          - not_null
+      - name: FieldValue
+        description: "Value of the field"
+      - name: IsDeleted
+        description: "Flag indicating if record has been deleted from source"
+      - name: CreatedOn
+        description: "Date record was created"
+      - name: LastUpdated
+        description: "Last updated timestamp"
+        data_tests:
+          - not_null
+          - date_is_before_current
+
+  - name: HIVClinicalAbstract
+    description: "HIV Clinical Abstraction data in EAV format"
+    data_tests:
+      - assert_table_has_rows:
+          min_rows: 50
+      - test_soft_delete_percentage:
+          max_percentage: 25
+          config:
+            severity: warn
+    columns:
+      - name: Id
+        description: "Record identifier"
+        data_tests:
+          - not_null
+      - name: SiteId
+        description: "Site identifier"
+        data_tests:
+          - not_null
+      - name: ChampsId
+        description: "CHAMPS identifier"
+        data_tests:
+          - not_null
+          - champs_id_format
+      - name: FieldName
+        description: "Field name from REDCap instrument" 
+        data_tests:
+          - not_null
+      - name: FieldValue
+        description: "Value of the field"
+      - name: IsDeleted
+        description: "Flag indicating if record has been deleted from source"
+      - name: CreatedOn
+        description: "Date record was created"
+        data_tests:
+          - not_null
+      - name: LastUpdated
+        description: "Last updated timestamp"
+        data_tests:
+          - not_null
+          - date_is_before_current

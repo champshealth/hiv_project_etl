@@ -1,0 +1,151 @@
+version: 2
+
+sources:
+  - name: hiv_data_staging
+    description: "Staging tables from REDCap HIV data"
+    # database: CHAMPS_QA  # Update if your database name is different
+    schema: stg
+    tables:
+      - name: HIVDataDictProj1_1
+        description: "HIV Project 1.1 Data Dictionary"
+        columns:
+          - name: SequenceId
+            description: "Unique identifier for the data dictionary entry"
+          - name: FormName
+            description: "Name of the REDCap form"
+          - name: FieldName
+            description: "Name of the field in REDCap"
+          - name: FieldLabel
+            description: "Label/description of the field"
+          - name: FieldType
+            description: "Type of field (text, radio, dropdown, etc.)"
+          - name: FileName
+            description: "Source file name"
+          - name: CreatedOn
+            description: "Timestamp when the record was created"
+
+      - name: HIVProject1_1_stg
+        description: "HIV Project 1.1 data in EAV format"
+        tests:
+          - assert_table_has_rows:
+              min_rows: 1
+        columns:
+          - name: SiteId
+            description: "Site identifier"
+            tests:
+              - expect_column_values_to_not_be_null
+          - name: CatchmentId
+            description: "Catchment identifier"
+            tests:
+              - expect_column_values_to_not_be_null
+          - name: ReportId
+            description: "Report identifier"
+          - name: ChampsId
+            description: "CHAMPS identifier"
+            tests:
+              - expect_column_values_to_not_be_null
+          - name: FieldName
+            description: "Name of the field"
+            tests:
+              - expect_column_values_to_not_be_null
+          - name: FieldValue
+            description: "Value of the field"
+
+      - name: HIVDataDictProj3_1
+        description: "HIV Project 3.1 Data Dictionary"
+        
+      - name: HIVProject3_1_stg
+        description: "HIV Project 3.1 data in EAV format"
+        tests:
+          - assert_table_has_rows:
+              min_rows: 1
+        columns:
+          - name: Id
+            description: "Record identifier"
+            tests:
+              - not_null
+#           - name: SiteId
+#               description: "Site identifier"
+#               tests:
+#                   - not_null
+          - name: ChampsId
+            description: "CHAMPS identifier"
+            tests:
+              - not_null
+              - champs_id_format   # custom test
+          - name: FieldName
+            description: "Name of the field"
+            tests:
+              - not_null
+          - name: FieldValue
+            description: "Value of the field"
+          - name: CreatedOn
+            description: "Date record was created"
+            tests:
+              - not_null
+              - date_is_before_current  # custom test checks if the date is before the current date
+      
+      - name: HIVDataDictClinicalAbstr
+        description: "HIV Clinical Abstraction Data Dictionary"
+        
+      - name: HIVClinicalAbstract_stg
+        description: "HIV Clinical Abstraction data in EAV format"
+      
+      - name: seed_rpt_HIVReportName
+        description: "Seed table containing HIV report name mappings"
+        columns:
+          - name: ReportId
+            description: "Unique identifier for the report"
+          - name: ReportName
+            description: "Name of the HIV report"
+            tests:
+              - not_null
+        
+  - name: hiv_data_views
+    description: "Views for HIV data processing"
+    # database: CHAMPS_QA
+
+
+  - name: dbo
+    description: "Core CHAMPS database tables"
+    schema: dbo
+    tables:      
+      - name: vw_champs_codes_distinct
+        description: "Lookup table for CHAMPS codes and their preferred names"
+        columns:
+          - name: champs_local_code
+            description: "CHAMPS code value"
+          - name: c_pref_name
+            description: "Preferred display name for the code"
+      - name: Site
+        description: "CHAMPS site information lookup table"
+        columns:
+          - name: Id
+            description: "Primary key/internal identifier for the site"
+          - name: SiteId
+            description: "External/public site identifier code"
+          - name: SiteName
+            description: "Name of the CHAMPS site"
+          - name: SiteIsoCode
+            description: "ISO country code for the site"
+          - name: Active
+            description: "Flag indicating if site is currently active"
+      - name: ConsentTracking
+        description: "Consent tracking information for CHAMPS participants"
+        columns:
+          - name: ChampsId
+            description: "CHAMPS ID linking to participant"
+          - name: SiteId
+            description: "Site identifier"
+          - name: Active
+            description: "Flag indicating if the consent is currently active"
+          - name: CatchmentId
+            description: "Catchment identifier"
+          - name: ReportId
+            description: "Report identifier"
+          - name: FileName
+            description: "Name of the consent form file"
+          - name: CreatedOn
+            description: "Date the consent record was created"
+          - name: UpdatedOn
+            description: "Date the consent record was last updated"

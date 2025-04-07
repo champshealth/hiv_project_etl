@@ -93,7 +93,7 @@ def extract_hiv_view_ddl_definitions():
                 return df
                 
             # Save DDL to individual .sql files
-            output_dir = 'data/ddl_definitions'
+            output_dir = 'src/ddl_definitions'
             import os
             os.makedirs(output_dir, exist_ok=True)
             
