@@ -104,28 +104,7 @@ sources:
   - name: hiv_data_views
     description: "Views for HIV data processing"
     # database: CHAMPS_QA
-    schema: stg
-    tables:
-      - name: vw_HIVDeathNotification
-        description: "View for HIV Death Notification data"
-      
-      - name: vw_HIVConsentTracking
-        description: "View for HIV Consent Tracking data"
-        
-      - name: vw_HIVMitsProcedure
-        description: "View for HIV MITS Procedure data"
-        
-      - name: vw_HIVMitsSpecimensCollect
-        description: "View for HIV MITS Specimens Collection data"
-        
-      - name: vw_HIVClinicalAbstraction
-        description: "View for HIV Clinical Abstraction data"
-        
-      - name: vw_HIVClinicalAbstractionFormComplete
-        description: "View for HIV Clinical Abstraction Form Completion status"
-        
-      - name: vw_HIVProject3_1_rpt
-        description: "Reporting view for HIV Project 3.1 data"
+
 
   - name: dbo
     description: "Core CHAMPS database tables"

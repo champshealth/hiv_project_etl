@@ -1,0 +1,251 @@
+version: 2
+
+models:
+  - name: vw_HIVConsentTracking
+    description: >
+      View for HIV study consent tracking data that feeds into the ConsentTracking table.
+      Only includes completed consent forms with mits_type = 'CH00050'.
+    meta:
+      downstream_processes:
+        - name: db_upsert_consent_data.py
+          type: Python ETL
+          description: >
+            Handles MERGE operations into ConsentTracking table including:
+            - Merging new/updated consent records
+            - Deactivating duplicate records
+            - Deactivating deleted records
+          location: src/db_upsert_consent_data.py
+          owner: Data Engineering Team
+    columns:
+      - name: Id
+        description: "Generated unique identifier using newid()"
+      - name: ConsentTrackingSiteId
+        description: "Site identifier from Site table"
+      - name: ReportId
+        description: "Report identifier"
+      - name: CatchmentId
+        description: "Catchment area identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: ConsentGranted
+        description: "Whether consent was granted (from elig_mits_consent field)"
+      - name: ConsentType
+        description: "Type of consent (from mits_type field)"
+      - name: ConsentDate
+        description: "Date consent was given (from elig_mits_consent_dt field)"
+      - name: SiteId
+        description: "Internal site identifier"
+      - name: FileName
+        description: "Fixed value 'adult_hiv_study'"
+      - name: CreatedOn
+        description: "Record creation timestamp"
+      - name: Active
+        description: "Record active status flag"
+
+  - name: vw_HIVDeathNotification
+    description: "View for HIV study Death Notification data that feeds into the DeathNotification table"
+    columns:
+      - name: Id
+        description: "Generated unique identifier"
+      - name: ReportId
+        description: "Report identifier"
+      - name: CatchmentId
+        description: "Catchment area identifier"
+      - name: DateOfDeathNotification
+        description: "Date when death was notified (from FieldValue)"
+      - name: SiteId
+        description: "Internal site identifier"
+      - name: DeathNotificationSiteId
+        description: "External site identifier for death notification"
+      - name: FileName
+        description: "Fixed value 'adult_hiv_study'"
+      - name: Active
+        description: "Record active status flag"
+      - name: CreatedOn
+        description: "Record creation timestamp"
+      - name: ModifiedOn
+        description: "Record modification timestamp"
+      - name: UploadedOn
+        description: "Record upload timestamp"
+
+  - name: vw_HIVMitsProcedure
+    description: "View for HIV study MITS procedure data that feeds into the MITSProcedure table"
+    columns:
+      - name: id
+        description: "Generated unique identifier"
+      - name: SiteId
+        description: "Site identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: MITSPerformed
+        description: "MITS procedure performance status"
+      - name: SpecimenKitId
+        description: "Specimen kit identifier"
+      - name: DateBodyReceived
+        description: "Date and time body was received"
+      - name: MITSLocation
+        description: "Location where MITS was performed"
+      - name: DateProcedureStarted
+        description: "Date MITS procedure started"
+      - name: TimeProcedureStarted
+        description: "Time MITS procedure started"
+      - name: TimeProcedureCompleted
+        description: "Time MITS procedure completed"
+      - name: SexOfDeceased
+        description: "Sex of the deceased"
+      - name: FileName
+        description: "Fixed value 'adult_hiv_study'"
+      - name: Active
+        description: "Record active status flag"
+      - name: CreatedOn
+        description: "Record creation timestamp"
+      - name: ModifiedOn
+        description: "Record modification timestamp"
+      - name: UploadedOn
+        description: "Record upload timestamp"
+
+  - name: vw_HIVMitsSpecimensCollect
+    description: "View for HIV study MITS specimen collection data that feeds into the MITSSpecimensCollected table"
+    columns:
+      - name: id
+        description: "Generated unique identifier"
+      - name: SiteId
+        description: "Site identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: KitId
+        description: "Specimen kit identifier"
+      - name: CollectionDate
+        description: "Date specimens were collected"
+      - name: MITSCollect
+        description: "Fixed value 'CH00001'"
+      - name: FileName
+        description: "Fixed value 'adult_hiv_study'"
+      - name: Active
+        description: "Record active status flag"
+      - name: CreatedOn
+        description: "Record creation timestamp"
+      - name: ModifiedOn
+        description: "Record modification timestamp"
+      - name: UploadedOn
+        description: "Record upload timestamp"
+      - name: CreatedBy
+        description: "Fixed value 'HIV_PROJECT_ETL'"
+      - name: ModifiedBy
+        description: "Fixed value 'HIV_PROJECT_ETL'"
+      - name: UploadedBy
+        description: "Fixed value 'HIV_PROJECT_ETL'"
+
+  - name: vw_HIVClinicalAbstr_rpt
+    description: "View for displaying HIV Project Clinical Abstraction Form data in Tableau Decode Report"
+    columns:
+      - name: SiteId
+        description: "Site identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: FieldName
+        description: "Name of the field from clinical abstraction form"
+      - name: FieldValue
+        description: "Raw value of the field"
+      - name: FieldValueLabel
+        description: "Decoded value label for coded fields"
+      - name: FormName
+        description: "Name of the clinical abstraction form"
+      - name: FieldLabel
+        description: "Label/description of the field"
+      - name: FieldType
+        description: "Type of field (radio, checkbox, dropdown, etc.)"
+      - name: SequenceId
+        description: "Sequence identifier from data dictionary"
+
+  - name: vw_HIVProject1_1_rpt
+    description: "View for displaying HIV Project 1.1 data in Tableau Decode Report"
+    columns:
+      - name: SiteId
+        description: "Site identifier"
+      - name: CatchmentId
+        description: "Catchment area identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: FieldName
+        description: "Name of the field"
+      - name: FieldValue
+        description: "Raw value of the field"
+      - name: FieldValueLabel
+        description: "Decoded value label for coded fields"
+      - name: FormName
+        description: "Name of the form"
+      - name: FieldLabel
+        description: "Label/description of the field"
+      - name: FieldType
+        description: "Type of field (radio, checkbox, dropdown, etc.)"
+      - name: SequenceId
+        description: "Sequence identifier from data dictionary"
+
+  - name: vw_HIVProject3_1_rpt
+    description: "View for displaying HIV Project 3.1 data in Tableau Decode Report"
+    columns:
+      - name: SiteId
+        description: "Site identifier"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: FieldName
+        description: "Name of the field"
+      - name: FieldValue
+        description: "Raw value of the field"
+      - name: FieldValueLabel
+        description: "Decoded value label for coded fields"
+      - name: FormName
+        description: "Name of the form"
+      - name: FieldLabel
+        description: "Label/description of the field"
+      - name: FieldType
+        description: "Type of field (radio, checkbox, dropdown, etc.)"
+      - name: SequenceId
+        description: "Sequence identifier from data dictionary"
+
+  - name: vw_HIVCPLWidgetAggregate
+    description: "View to populate the CPL Widget Aggregate table for Adult HIV cases"
+    columns:
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: ReportId
+        description: "Report identifier"
+      - name: CatchmentId
+        description: "Catchment area identifier"
+      - name: DateOfDeathNotification
+        description: "Date when death was notified"
+      - name: DaysSinceDeathNotification
+        description: "Number of days elapsed since death notification"
+      - name: DeathNotificationSiteId
+        description: "Site identifier for death notification"
+      - name: DemographicsModifiedOn
+        description: "Current timestamp for demographics"
+      - name: ChildAbstractionModifiedOn
+        description: "Clinical abstraction modification date"
+      - name: SitePathDiagModifiedOn
+        description: "Site pathology diagnostics modification date"
+      - name: SitePathFindingModifiedOn
+        description: "Site pathology findings modification date"
+      - name: SitePathTissueModifiedOn
+        description: "Site pathology tissue modification date"
+      - name: LaboratoryResultsModifiedOn
+        description: "Laboratory results modification date"
+      - name: PlacentaExaminationModifiedOn
+        description: "Placenta examination modification date"
+      - name: SiteGuid
+        description: "Internal site identifier"
+      - name: SiteName
+        description: "Name of the site"
+
+  - name: vw_rpt_HIV_Report
+    description: "View called by the Portal to generate Tableau reports for HIV project cases"
+    columns:
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: ReportUri
+        description: "Concatenated URI for the report including ChampsId"
+      - name: ReportSequence
+        description: "Sequence number for report ordering"
+      - name: PackageType
+        description: "Type of report package"
