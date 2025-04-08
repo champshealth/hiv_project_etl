@@ -9,7 +9,16 @@ from requests.exceptions import RequestException
 from src.logging_config import logger
 
 def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
-    """Export the REDCap API data as a pandas dataframe."""
+    """
+    Export the REDCap API data as a pandas dataframe.
+    
+    Args:
+        redcap_tokens: List of dictionaries containing token metadata
+        output_file: Path for output files
+    """
+    # Flatten the tokens list if it's nested
+    if redcap_tokens and isinstance(redcap_tokens[0], list):
+        redcap_tokens = [token for sublist in redcap_tokens for token in sublist]
 
     # Configure retry strategy
     retry_strategy = Retry(
@@ -25,9 +34,10 @@ def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
     session.mount("https://", adapter)
 
     all_dfs = []
-    for redcap_token in redcap_tokens:
+    for token_info in redcap_tokens:
+        logger.info(f"Fetching data for project: {token_info['name']}")
         data = {
-            'token': redcap_token,
+            'token': token_info['token'],
             'content': 'record',
             'action': 'export',
             'format': 'json',
@@ -35,7 +45,7 @@ def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
             'csvDelimiter': '',
             'rawOrLabel': 'raw',
             'rawOrLabelHeaders': 'raw',
-            'exportCheckboxLabel': 'true', # ignored if 'type': 'eav'
+            'exportCheckboxLabel': 'true',
             'exportSurveyFields': 'false',
             'exportDataAccessGroups': 'false',
             'returnFormat': 'json'
@@ -43,15 +53,17 @@ def redcap_api_export(redcap_tokens: list, output_file ) -> pd.DataFrame:
 
         try:
             response = session.post(REDCAP_URL, data=data)
-            response.raise_for_status()  # Raise an exception for non-200 status codes
+            response.raise_for_status()
 
             data = response.json()
             if data:
                 df = pd.DataFrame(data)
+                # Add project identifier to the dataframe
+                df['redcap_project'] = token_info['name']
                 all_dfs.append(df)
 
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching data from REDCap API: {e}")
+            logger.error(f"Error fetching data from REDCap API for project {token_info['name']}: {e}")
 
     if all_dfs:
         final_df = pd.concat(all_dfs, ignore_index=True)

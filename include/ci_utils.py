@@ -50,19 +50,19 @@ class connect_db():
         )
     
     # Production connections
-    conn_prod_rpt = create_connection(prod_server, db_prod_rpt)
-    conn_prod = create_connection(prod_server, db_prod)
-    conn_prod_aux = create_connection(prod_server, db_aux)
+    conn_prod_rpt = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_prod_rpt))
+    conn_prod = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_prod))
+    conn_prod_aux = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_aux))
     
     # QA connections
-    conn_qa_rpt = create_connection(dev_server, db_qa_rpt)
-    conn_qa = create_connection(dev_server, db_qa)
-    conn_qa_aux = create_connection(dev_server, db_aux)
+    conn_qa_rpt = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_qa_rpt))
+    conn_qa = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_qa))
+    conn_qa_aux = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_aux))
     
     # Development connections
-    conn_dev = create_connection(dev_server, db_dev)
-    conn_dev_aux = create_connection(dev_server, db_aux)
+    conn_dev = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_dev))
+    conn_dev_aux = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_aux))
     
     # Staging connections
-    conn_stg = create_connection(dev_server, db_stg)
-    conn_stg_rpt = create_connection(dev_server, db_stg_rpt)
+    conn_stg = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_stg))
+    conn_stg_rpt = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_stg_rpt))
