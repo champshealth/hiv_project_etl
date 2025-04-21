@@ -25,6 +25,9 @@ tokens_31:
   - name: south_africa
     env_key: REDCAP_API_TOKEN_31_ZA
     description: "REDCap API token for HIV South Africa 3.1 project"
+  - name: all_sites
+    env_key: REDCAP_API_TOKEN_31
+    description: "Temporary REDCap API token for all HIV sites 3.1 project"
 
 tokens_ca:
   - name: kenya
@@ -39,3 +42,6 @@ tokens_ca:
   - name: south_africa
     env_key: REDCAP_API_TOKEN_CA_ZA
     description: "REDCap API token for HIV South Africa Clinical Abstraction"
+  - name: all_sites
+    env_key: REDCAP_API_TOKEN_CA
+    description: "Temporary REDCap API token for all HIV sites Clinical Abstraction"

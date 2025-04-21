@@ -11,9 +11,9 @@ from config.config import CONN, DB_SCHEMA ,REDCAP_DATA_DICT_FILE_31, REDCAP_DATA
 # DATA_DICT_FILE_NAME = 'data/AdultHIVProject3_1_DataDict_2024-11-07.csv'
 # DATA_DICT_APPEND_FILE_NAME = 'data/AdultHIVProject3_1_DataDict_append.csv'
 
-def db_load_project_3_1(df: pd.DataFrame) -> None:
+def db_load_project_3_1(df: pd.DataFrame = None) -> None:
     logger.info('Starting db_load_project_3_1')
-    if df.empty:
+    if df is None or df.empty:
         logger.info('No 3.1 data to load')
         return
     try:

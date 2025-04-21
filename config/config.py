@@ -28,8 +28,8 @@ def load_redcap_tokens(group):
 
 # Load tokens for each project group
 REDCAP_11_TOKENS = load_redcap_tokens('11')
-# REDCAP_31_TOKENS = load_redcap_tokens('31')
-# REDCAP_CA_TOKENS = load_redcap_tokens('ca')
+REDCAP_31_TOKENS = load_redcap_tokens('31')
+REDCAP_CA_TOKENS = load_redcap_tokens('ca')
 
 # Legacy token variables - kept for backward compatibility
 REDCAP_API_TOKEN_CA = os.getenv('REDCAP_API_TOKEN_CA')
@@ -90,5 +90,5 @@ MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 
 # TODO: move this to the .env file later
-CONN = connect_db.conn_qa
-# CONN = connect_db.conn_stg
+CONN = connect_db.conn_qa()
+# CONN = connect_db.conn_stg()

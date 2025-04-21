@@ -11,7 +11,8 @@ def upsert_death_notif_data() -> None:
         MERGE into [dbo].[DeathNotification] as Target
         using {SCHEMA_NAME}.{HIV_DEATH_NOTIFICATION_VIEW} as Source
                         on (
-                            Target.ReportId = Source.ReportId 
+                            Target.SiteId = Source.SiteId
+                            and Target.ReportId = Source.ReportId 
                             and Target.CatchmentId = Source.CatchmentId
                             and Target.[FileName] = Source.[FileName]
                             and Target.FileName = 'adult_hiv_study'
