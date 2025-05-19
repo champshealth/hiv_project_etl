@@ -11,4 +11,3 @@ labkey==3.3.0
 pyodbc
 uv
 pip
-dbt-sqlserver

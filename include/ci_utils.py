@@ -50,19 +50,45 @@ class connect_db():
         )
     
     # Production connections
-    conn_prod_rpt = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_prod_rpt))
-    conn_prod = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_prod))
-    conn_prod_aux = property(lambda cls: cls.create_connection(cls.prod_server, cls.db_aux))
+    @classmethod
+    def conn_prod_rpt(cls):
+        return cls.create_connection(cls.prod_server, cls.db_prod_rpt)
+
+    @classmethod
+    def conn_prod(cls):
+        return cls.create_connection(cls.prod_server, cls.db_prod)
+
+    @classmethod
+    def conn_prod_aux(cls):
+        return cls.create_connection(cls.prod_server, cls.db_aux)
     
     # QA connections
-    conn_qa_rpt = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_qa_rpt))
-    conn_qa = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_qa))
-    conn_qa_aux = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_aux))
+    @classmethod
+    def conn_qa_rpt(cls):
+        return cls.create_connection(cls.dev_server, cls.db_qa_rpt)
+
+    @classmethod
+    def conn_qa(cls):
+        return cls.create_connection(cls.dev_server, cls.db_qa)
+
+    @classmethod
+    def conn_qa_aux(cls):
+        return cls.create_connection(cls.dev_server, cls.db_aux)
     
     # Development connections
-    conn_dev = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_dev))
-    conn_dev_aux = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_aux))
+    @classmethod
+    def conn_dev(cls):
+        return cls.create_connection(cls.dev_server, cls.db_dev)
+
+    @classmethod
+    def conn_dev_aux(cls):
+        return cls.create_connection(cls.dev_server, cls.db_aux)
     
     # Staging connections
-    conn_stg = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_stg))
-    conn_stg_rpt = property(lambda cls: cls.create_connection(cls.dev_server, cls.db_stg_rpt))
+    @classmethod
+    def conn_stg(cls):
+        return cls.create_connection(cls.dev_server, cls.db_stg)
+
+    @classmethod
+    def conn_stg_rpt(cls):
+        return cls.create_connection(cls.dev_server, cls.db_stg_rpt)

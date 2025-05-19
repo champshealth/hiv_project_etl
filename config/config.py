@@ -7,7 +7,7 @@ from include.ci_utils import connect_db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-load_dotenv()
+load_dotenv(override=True)
 REDCAP_URL = os.getenv('REDCAP_URL')
 
 def load_redcap_tokens(group):
@@ -89,6 +89,12 @@ MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 # cpl widget data objects
 CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 
-# TODO: move this to the .env file later
-CONN = connect_db.conn_qa()
-# CONN = connect_db.conn_stg()
+# Set up the database connection based on the environment
+ENV = os.getenv('ENV')
+# ENV = 'prod'  # Example: set to 'prod', 'dev', or 'stg'
+if ENV == 'prod':
+    CONN = connect_db.conn_prod()
+elif ENV == 'dev':
+    CONN = connect_db.conn_qa()
+elif ENV == 'stg':
+    CONN = connect_db.conn_stg()

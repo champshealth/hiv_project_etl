@@ -33,6 +33,7 @@ FROM
                                                   AND ct.ConsentType = 'CH00050' -- MITS Consent required
                                                   AND ct.[FileName] = 'adult_hiv_study'
                                                   AND ct.Active = 1
+                                                  and proj3_1.IsDeleted = 0
     WHERE  
         -- proj3_1.ChampsId = 'DWHV00001' and
         (

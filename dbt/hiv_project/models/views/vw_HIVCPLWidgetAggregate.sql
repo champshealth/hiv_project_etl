@@ -13,6 +13,7 @@ SELECT
     DATEDIFF(day, DateOfDeathNotification, getdate()) as DaysSinceDeathNotification,
     DeathNotificationSiteId,
     getdate() as DemographicsModifiedOn,
+    mproc.CreatedOn as MITSProcedureModifiedOn,
     ca.CreatedOn as ChildAbstractionModifiedOn,
     sp.SitePathDiagModifiedOn,
     sp.SitePathFindingModifiedOn,
@@ -30,9 +31,16 @@ JOIN {{ source('dbo', 'ConsentTracking') }} ct ON dn.ReportId = ct.ReportId
 LEFT JOIN (
     SELECT DISTINCT 
         ChampsId, 
-        cast(CreatedOn as date) as CreatedOn 
+        max(cast(CreatedOn as date)) as CreatedOn
     FROM {{ ref('HIVClinicalAbstract') }}
+    group by ChampsId
 ) ca ON ct.ChampsId = ca.ChampsId
+LEFT JOIN (SELECT [SiteId] ,[ChampsId] ,[FileName] ,cast(CreatedOn as date) CreatedOn
+            FROM {{ ref('vw_HIVMitsProcedure') }}
+            where SiteId is not null 
+            ) mproc 
+            on ct.ChampsId = mproc.ChampsId 
+            and ct.[FileName] = mproc.[FileName] --'adult_hiv_study'
 LEFT JOIN (
     SELECT 
         ChampsId,
