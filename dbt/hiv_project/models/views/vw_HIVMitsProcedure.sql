@@ -33,6 +33,7 @@ FROM
     FROM {{ ref('HIVProject3_1') }}
     LEFT JOIN {{ source('dbo', 'Site') }} on Site.SiteISOCode = LEFT(ChampsId, 2)
     WHERE 
+        IsDeleted = 0 and 
         -- ChampsId = 'DWHV00001' and
         (
             FieldName LIKE 'mits_performed%'  

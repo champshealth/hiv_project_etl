@@ -1,0 +1,47 @@
+tokens_11:
+  - name: kenya
+    env_key: REDCAP_API_TOKEN_11_KE
+    description: "REDCap API token for HIV Kenya project. pid=462"
+  - name: mozambique
+    env_key: REDCAP_API_TOKEN_11_MZ 
+    description: "REDCap API token for HIV Mozambique project. pid=461"
+  - name: sierra_leone
+    env_key: REDCAP_API_TOKEN_11_SL
+    description: "REDCap API token for HIV Sierra Leone project. pid=463"
+  - name: south_africa
+    env_key: REDCAP_API_TOKEN_11_ZA
+    description: "REDCap API token for HIV South Africa project. pid=460"
+
+tokens_31:
+  # - name: kenya
+  #   env_key: REDCAP_API_TOKEN_31_KE
+  #   description: "REDCap API token for HIV Kenya 3.1 project"
+  # - name: mozambique
+  #   env_key: REDCAP_API_TOKEN_31_MZ
+  #   description: "REDCap API token for HIV Mozambique 3.1 project"
+  # - name: sierra_leone
+  #   env_key: REDCAP_API_TOKEN_31_SL
+  #   description: "REDCap API token for HIV Sierra Leone 3.1 project"
+  # - name: south_africa
+  #   env_key: REDCAP_API_TOKEN_31_ZA
+  #   description: "REDCap API token for HIV South Africa 3.1 project"
+  - name: all_sites
+    env_key: REDCAP_API_TOKEN_31
+    description: "REDCap API token for all HIV sites 3.1 project"
+
+tokens_ca:
+  # - name: kenya
+  #   env_key: REDCAP_API_TOKEN_CA_KE
+  #   description: "REDCap API token for HIV Kenya Clinical Abstraction"
+  # - name: mozambique
+  #   env_key: REDCAP_API_TOKEN_CA_MZ
+  #   description: "REDCap API token for HIV Mozambique Clinical Abstraction"
+  # - name: sierra_leone
+  #   env_key: REDCAP_API_TOKEN_CA_SL
+  #   description: "REDCap API token for HIV Sierra Leone Clinical Abstraction"
+  # - name: south_africa
+  #   env_key: REDCAP_API_TOKEN_CA_ZA
+  #   description: "REDCap API token for HIV South Africa Clinical Abstraction"
+  - name: all_sites
+    env_key: REDCAP_API_TOKEN_CA
+    description: "REDCap API token for all HIV sites Clinical Abstraction"

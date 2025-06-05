@@ -1,22 +1,39 @@
-import dotenv
 import os
+import yaml
+from dotenv import load_dotenv
 import uuid
 import datetime
 from include.ci_utils import connect_db
-dotenv.load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# pre-requisite: create a .env file in the root directory of the project
-# and add the following environment variables
-REDCAP_API_TOKEN_11 = os.getenv('REDCAP_API_TOKEN_11')
-REDCAP_API_TOKEN_CA = os.getenv('REDCAP_API_TOKEN_CA')
-REDCAP_API_TOKEN_31 = os.getenv('REDCAP_API_TOKEN_31')
+load_dotenv(override=True)
 REDCAP_URL = os.getenv('REDCAP_URL')
 
-LABKEY_SERVER_URL = os.getenv('LABKEY_SERVER_URL')
-LABKEY_API_KEY = os.getenv('LABKEY_API_KEY')
-LABKEY_CONTAINER_PATH = os.getenv('LABKEY_CONTAINER_PATH')
+def load_redcap_tokens(group):
+    """Load REDCap tokens with their metadata from YAML config for specific group"""
+    with open('config/redcap_tokens.yaml', 'r') as file:
+        token_config = yaml.safe_load(file)
+    
+    tokens = []
+    for token in token_config[f'tokens_{group}']:
+        env_value = os.getenv(token['env_key'])
+        if env_value:
+            tokens.append({
+                'name': token['name'],
+                'token': env_value,
+                'description': token['description']
+            })
+    return tokens
 
+# Load tokens for each project group
+REDCAP_11_TOKENS = load_redcap_tokens('11')
+REDCAP_31_TOKENS = load_redcap_tokens('31')
+REDCAP_CA_TOKENS = load_redcap_tokens('ca')
+
+# Legacy token variables - kept for backward compatibility
+REDCAP_API_TOKEN_CA = os.getenv('REDCAP_API_TOKEN_CA')
+REDCAP_API_TOKEN_31 = os.getenv('REDCAP_API_TOKEN_31')
 ETL_USER_ID = 'HIV_PROJECT_ETL'
 
 DATA_DIR = 'data'
@@ -72,6 +89,12 @@ MITS_SPECIMEN_COLLECT_VIEW_NAME = 'vw_HIVMitsSpecimensCollect'
 # cpl widget data objects
 CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 
-# TODO: move this to the .env file later
-CONN = connect_db.conn_qa
-# CONN = connect_db.conn_stg
+# Set up the database connection based on the environment
+ENV = os.getenv('ENV')
+# ENV = 'prod'  # Example: set to 'prod', 'dev', or 'stg'
+if ENV == 'prod':
+    CONN = connect_db.conn_prod()
+elif ENV == 'dev':
+    CONN = connect_db.conn_qa()
+elif ENV == 'stg':
+    CONN = connect_db.conn_stg()

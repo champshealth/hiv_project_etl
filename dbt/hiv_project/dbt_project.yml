@@ -53,6 +53,10 @@ models:
       +materialized: table
       
 
+# Define variables that will be accessible in all models
+vars:
+  timezone: 'America/New_York'
+
 seeds:
   hiv_project:
     +schema: stg

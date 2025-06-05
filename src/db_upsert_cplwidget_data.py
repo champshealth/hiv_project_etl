@@ -58,6 +58,7 @@ def upsert_cpl_widget_aggregate() -> None:
                         target.SiteName = source.SiteName,
                         target.SiteGuid = source.SiteGuid,
                         target.DemographicsModifiedOn = source.DemographicsModifiedOn,
+                        target.MITSProcedureModifiedOn = source.MITSProcedureModifiedOn,
                         target.ChildAbstractionModifiedOn = source.ChildAbstractionModifiedOn,
                         target.SitePathDiagModifiedOn = source.SitePathDiagModifiedOn,
                         target.SitePathFindingModifiedOn = source.SitePathFindingModifiedOn,
@@ -68,10 +69,10 @@ def upsert_cpl_widget_aggregate() -> None:
                         target.CatchmentId = source.CatchmentId
                 when not matched then
                     insert (Id, ChampsId, SiteId, DateOfDeathNotification, DaysSinceDeathNotification, SiteName, SiteGuid, DemographicsModifiedOn, 
-                            ChildAbstractionModifiedOn, SitePathDiagModifiedOn, SitePathFindingModifiedOn, SitePathTissueModifiedOn, LaboratoryResultsModifiedOn
+                            ChildAbstractionModifiedOn, MITSProcedureModifiedOn, SitePathDiagModifiedOn, SitePathFindingModifiedOn, SitePathTissueModifiedOn, LaboratoryResultsModifiedOn
                             ,PlacentaExaminationModifiedOn, ReportId, CatchmentId)
                     values (newid(), source.ChampsId, source.DeathNotificationSiteId , source.DateOfDeathNotification, source.DaysSinceDeathNotification, source.SiteName, source.SiteGuid, 
-                            source.DemographicsModifiedOn, source.ChildAbstractionModifiedOn, source.SitePathDiagModifiedOn, source.SitePathFindingModifiedOn, 
+                            source.DemographicsModifiedOn, source.ChildAbstractionModifiedOn, source.MITSProcedureModifiedOn, source.SitePathDiagModifiedOn, source.SitePathFindingModifiedOn, 
                             source.SitePathTissueModifiedOn, source.LaboratoryResultsModifiedOn, source.PlacentaExaminationModifiedOn,
                             source.ReportId, source.CatchmentId)
             ;
@@ -100,19 +101,19 @@ def upsert_cpl_widget_aggregate() -> None:
                     insert (Id, JobId, ProcessId, SiteId, FileName, ChampsId, 
                             CreatedOn, CreatedBy, UploadedOn, UploadedBy, ModifiedOn, ModifiedBy, Active, Valid,  ConsentType, Status, StatusText)
                     values (newid(), 'HIV_PROJECT_ETL', 'HIV_PROJECT_ETL', source.SiteId, 'adult_hiv_study', source.ChampsId, 
-                            GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', 1, 1, source.ConsentType,         1, 'Pending')
+                            GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', GETDATE(), 'HIV_PROJECT_ETL', 1, 1, source.ConsentType,1, 'Pending')
                     ;
         """)
 
         with CONN.connect() as conn:
             result = conn.execute(merge_sql)
             result_detail = conn.execute(merge_cpl_detail_sql)
-            result_case_status = conn.execute(merge_case_status_sql)
+            # result_case_status = conn.execute(merge_case_status_sql)
             # result_deactivate_deleted = conn.execute(deactivate_deleted_sql)
             conn.commit()
             logger.info(f"Merged {result.rowcount} rows into CPLWidgetAggregate")
             logger.info(f"Merged {result_detail.rowcount} rows into CPLDetailWidgetAggregate")
-            logger.info(f"Merged {result_case_status.rowcount} rows into CaseStatus")
+            # logger.info(f"Merged {result_case_status.rowcount} rows into CaseStatus")
         logger.info('Finished upsert_cpl_widget_aggregate')
     except Exception as e:
         print(f"Error in upsert_cpl_widget_aggregate.py: {e}")
