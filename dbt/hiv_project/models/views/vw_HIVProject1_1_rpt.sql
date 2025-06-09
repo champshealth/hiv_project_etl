@@ -24,3 +24,4 @@ from {{ ref('HIVProject1_1') }} p11
 left join {{ source('dbo', 'vw_champs_codes_distinct') }} ccd on p11.FieldValue = ccd.champs_local_code
 left join {{ ref('HIVDataDictProj1_1') }} dict on p11.FieldName = dict.FieldName
 where p11.IsDeleted = 0
+and p11.FieldName != concat(dict.FormName, '_complete') -- Exclude completion field
