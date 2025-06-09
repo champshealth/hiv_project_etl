@@ -5,3 +5,5 @@ src/__pycache__/
 include/__pycache__/
 config/__pycache__/
 tmp/
+logs/
+*.pyc
