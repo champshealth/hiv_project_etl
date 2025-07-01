@@ -14,6 +14,55 @@ from typing import List, Dict, Any
 # df = pd.read_csv('data/redcap_hiv_project1_1.csv')
 
 
+def chunk_by_record(df, chunk_size=1000):
+    """
+    Chunk DataFrame by record groups, ensuring no record is split across chunks.
+    
+    Args:
+        df: Input DataFrame with either a 'record' or 'ReportId' column
+        chunk_size: Target number of rows per chunk (approximate)
+        
+    Returns:
+        List of DataFrames, each containing complete record groups
+    """
+    # Determine the grouping column name
+    if 'record' in df.columns:
+        group_col = 'record'
+    elif 'ReportId' in df.columns:
+        group_col = 'ReportId'
+    else:
+        raise ValueError("DataFrame must contain either 'record' or 'ReportId' column for grouping")
+    
+    logger.debug(f"Grouping by column: {group_col}")
+    
+    # Group by the appropriate column and calculate sizes
+    record_groups = df.groupby(group_col, group_keys=False)
+    record_sizes = record_groups.size()
+    
+    chunks = []
+    current_chunk = []
+    current_size = 0
+    
+    # Iterate through record groups and build chunks
+    for record, group in record_groups:
+        group_size = len(group)
+        
+        # If adding this group would exceed chunk size and we already have records in current chunk
+        if current_size + group_size > chunk_size and current_chunk:
+            chunks.append(pd.concat(current_chunk, ignore_index=True))
+            current_chunk = [group]
+            current_size = group_size
+        else:
+            current_chunk.append(group)
+            current_size += group_size
+    
+    # Add the last chunk if not empty
+    if current_chunk:
+        chunks.append(pd.concat(current_chunk, ignore_index=True))
+    
+    logger.debug(f"Created {len(chunks)} chunks")
+    return chunks
+
 def process_chunk(chunk_df):
     """Process a chunk of data"""
     conn = duckdb.connect()
@@ -37,51 +86,31 @@ def process_chunk(chunk_df):
 
 def transform_project_1_1(df: pd.DataFrame) -> pd.DataFrame:
     df = df.astype(str)
-
-    # For small datasets, just use the original method
-    if len(df) < 10000:
-        conn = duckdb.connect()
-        conn.execute(" CREATE TABLE redcap_hiv_project1_1_df AS SELECT * FROM df ")
-        conn.execute(f"""CREATE or REPLACE table redcap_hiv_project1_1 as
-                        select record,field_name,value 
-                        FROM redcap_hiv_project1_1_df
-                    """)
-        
-        # extract key fields site_id, catchment_id and champs_id from the exported data
-        df_site = conn.execute(""" WITH site_cte as (
-                                        SELECT record,
-                                        MAX(CASE WHEN field_name = 'champs_id' THEN value END) AS champs_id,
-                                        MAX(CASE WHEN field_name = 'site_id' THEN value END) AS site_id
-                                        ,max(case when field_name like 'catchment_id%' THEN value END) AS catchment_id
-                                        FROM redcap_hiv_project1_1
-                                        WHERE (field_name in ('champs_id', 'site_id' ) or field_name like 'catchment_id%')
-                                        GROUP BY record 
-                                    )
-                                    SELECT p.*, site_cte.site_id, site_cte.catchment_id, site_cte.champs_id 
-                                    from redcap_hiv_project1_1 p
-                                    join site_cte on p.record = site_cte.record 
-                                """).fetch_df()
+    
+    # Process data in chunks by record groups
+    chunk_size = 10000  # Target chunk size (approximate)
+    chunks = chunk_by_record(df, chunk_size)
+    
+    if len(chunks) == 1:
+        # For small datasets, process directly
+        logger.info(f"Processing {len(df)} rows in a single chunk")
+        return process_chunk(df)
     else:
-        # For larger datasets, use parallel processing
-        logger.info(f"Processing {len(df)} rows with parallel execution")
-        # Split data into chunks for parallel processing
-        num_processes = min(multiprocessing.cpu_count(), 4)  # Limit to 4 processes max
-        chunk_size = len(df) // num_processes
-        chunks = [df[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
-        
-        # Process chunks in parallel
+        # For larger datasets, process chunks sequentially to ensure deterministic results
+        logger.info(f"Processing {len(df)} rows in {len(chunks)} chunks by record groups")
         results = []
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_processes) as executor:
-            futures = [executor.submit(process_chunk, chunk) for chunk in chunks]
-            for future in concurrent.futures.as_completed(futures):
-                results.append(future.result())
+        
+        for i, chunk in enumerate(chunks, 1):
+            logger.info(f"Processing chunk {i}/{len(chunks)} with {len(chunk)} rows")
+            result = process_chunk(chunk)
+            results.append(result)
         
         # Combine results
         df_site = pd.concat(results, ignore_index=True)
         
-    # write to csv for testing
-    df_site.to_csv('data/redcap_project1_1.csv', index=False)
-    return df_site
+        # write to csv for testing
+        df_site.to_csv('data/redcap_project1_1.csv', index=False)
+        return df_site
 
 def fast_insert_with_executemany(conn, table_name, schema, dataframe, batch_size=1000):
     """
@@ -177,20 +206,24 @@ def db_load_project_1_1(df: pd.DataFrame) -> pd.DataFrame:
             truncate_stg_table = sa.text(f"TRUNCATE TABLE stg.{DATA_TABLE_11}")
             conn.execute(truncate_stg_table)
             
-            # Load data in chunks of 1000 rows for better performance
-            chunk_size = 1000
+            # Load data in chunks by record groups for data integrity
+            chunk_size = 10000  # Target chunk size (approximate)
+            chunks = chunk_by_record(df, chunk_size)
             total_rows = 0
             
             # Display progress info
-            total_chunks = (len(df) + chunk_size - 1) // chunk_size
-            logger.info(f'Loading data in {total_chunks} chunks of {chunk_size} rows each...')
+            logger.info(f'Loading data in {len(chunks)} chunks by record groups...')
             
-            for i in range(0, len(df), chunk_size):
-                chunk_df = df[i:i+chunk_size]
-                # Remove method='multi' which is causing the SQL Server error
-                rows_added = fast_insert_with_executemany(conn, DATA_TABLE_11, 'stg', chunk_df, batch_size=chunk_size)
+            for i, chunk_df in enumerate(chunks, 1):
+                rows_added = fast_insert_with_executemany(
+                    conn, 
+                    DATA_TABLE_11, 
+                    'stg', 
+                    chunk_df, 
+                    batch_size=1000  # Keep batch size smaller for SQL Server
+                )
                 total_rows += rows_added
-                logger.info(f'Loaded chunk {(i//chunk_size)+1}/{total_chunks} with {rows_added} rows.')
+                logger.info(f'Loaded chunk {i}/{len(chunks)} with {rows_added} rows (total: {total_rows}/{len(df)}).')
             
             # conn.commit()
 
