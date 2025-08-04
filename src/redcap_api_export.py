@@ -15,13 +15,17 @@ def convert_flat_to_eav(flat_df):
     # Get the record identifier column (usually first column)
     record_id_col = flat_df.columns[0]
 
-    
     # Check for redcap_repeat* columns to include in id_vars for unpivot (melt)
     has_repeat_instrument = 'redcap_repeat_instrument' in flat_df.columns
     has_repeat_instance = 'redcap_repeat_instance' in flat_df.columns
     
     # Define id_vars with record_id_col initially
+    # and add site_id if it exists as in project 1.1
+    # site_id is not always present in all projects, so check for its existence
     id_vars = [record_id_col]
+    if 'site_id' in flat_df.columns:
+        id_vars.append('site_id')   
+        print("Site ID column found in flat dataframe and added to id_vars")
     
     # include repeat columns in id_vars if they exist for melt
     if has_repeat_instrument:
@@ -36,7 +40,7 @@ def convert_flat_to_eav(flat_df):
         var_name='field_name', 
         value_name='value'
     )
-    
+    print("columns after melt:", eav_df.columns)
     # rename the record_id_col to 'record' to match default eav EAV format
     eav_df = eav_df.rename(columns={record_id_col: 'record'})
 
@@ -68,9 +72,12 @@ def convert_flat_to_eav(flat_df):
     
     # Convert all values to strings
     eav_df['value'] = eav_df['value'].astype(str)
+    eav_df['field_name'] = eav_df['field_name'].astype(str)
+    eav_df['record'] = eav_df['record'].astype(str)
+    # eav_df['site_id'] = eav_df['site_id'].astype(str) if 'site_id' in eav_df.columns else None
     
     # Ensure columns are in the correct order for REDCap EAV format
-    columns = ['record', 'field_name', 'value']
+    columns = ['record', 'site_id', 'field_name', 'value'] if 'site_id' in eav_df.columns else ['record', 'field_name', 'value']
     
     # Add repeat columns if they exist
     if 'redcap_repeat_instrument' in eav_df.columns:
@@ -81,7 +88,6 @@ def convert_flat_to_eav(flat_df):
     # Reorder and sort
     eav_df = eav_df[columns]
     eav_df = eav_df.sort_values(['record', 'field_name'])
-    
     return eav_df
 
 def redcap_api_export(redcap_tokens: list, output_file) -> pd.DataFrame:
@@ -150,9 +156,24 @@ def redcap_api_export(redcap_tokens: list, output_file) -> pd.DataFrame:
                             record[key] = str(value)
                             
                 df = pd.DataFrame(json_data)
+                if 'site_id' in df.columns:
+                    print("Site ID column found for project:", project_name)
+                # Temporary workaround for South Africa project - set site_id to "001"
+                if output_file.endswith("redcap_export_11"):
+                    if project_name == "south_africa":
+                        # Ensure site_id column exists
+                        if 'site_id' not in df.columns:
+                            df['site_id'] = "001"
+                        else:
+                            # Set all site_id values to "001"
+                            df['site_id'] = "001"
+                        logger.info(f"Applied site_id workaround for project: {project_name}")
+                
                 # write to csv for debugging
                 # print(f"Writing flat data to CSV for project {project_name}")
                 # df.to_csv(f"data/redcap_{project_name}_flat.csv", index=False)
+
+                # Convert flat dataframe to EAV format
                 df = convert_flat_to_eav(df)
                 # df['redcap_project'] = project_name
                 all_dfs.append(df)

@@ -7,3 +7,4 @@ config/__pycache__/
 tmp/
 logs/
 *.pyc
+.vscode/mcp.json
