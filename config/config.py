@@ -93,8 +93,8 @@ CPL_WIDGET_VIEW_NAME = 'vw_HIVCPLWidgetAggregate'
 ENV = os.getenv('ENV')
 # ENV = 'prod'  # Example: set to 'prod', 'dev', or 'stg'
 if ENV == 'prod':
-    CONN = connect_db.conn_prod()
+    CONN = connect_db.conn_prod
 elif ENV == 'dev':
-    CONN = connect_db.conn_qa()
+    CONN = connect_db.conn_qa
 elif ENV == 'stg':
-    CONN = connect_db.conn_stg()
+    CONN = connect_db.conn_stg
