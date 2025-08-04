@@ -70,13 +70,13 @@ def process_chunk(chunk_df):
     
     # Extract key fields similar to transform_project_1_1 function
     result = conn.execute("""WITH site_cte as (
-                            SELECT record,
-                            MAX(CASE WHEN field_name = 'champs_id' THEN value END) AS champs_id,
-                            MAX(CASE WHEN field_name = 'site_id' THEN value END) AS site_id
+                            SELECT record,site_id,
+                            MAX(CASE WHEN field_name = 'champs_id' THEN value END) AS champs_id
+                            --MAX(CASE WHEN field_name = 'site_id' THEN value END) AS site_id
                             ,max(case when field_name like 'catchment_id%' THEN value END) AS catchment_id
                             FROM chunk_df
-                            WHERE (field_name in ('champs_id', 'site_id' ) or field_name like 'catchment_id%')
-                            GROUP BY record 
+                            WHERE (field_name in ('champs_id') or field_name like 'catchment_id%')
+                            GROUP BY record, site_id
                         )
                         SELECT p.*, site_cte.site_id, site_cte.catchment_id, site_cte.champs_id 
                         from chunk_df p
