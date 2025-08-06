@@ -1,6 +1,6 @@
 import json
 import datetime
-from src.ci_slack import post_mesg_channel
+from include.ci_slack import post_mesg_channel
 from config.config import LOG_FILE, ERROR_LEVELS
 
 
@@ -38,7 +38,7 @@ def check_for_errors(log_file, current_date):
 def format_slack_message(errors):
     """Formats the error messages for Slack."""
     if not errors:
-        return "*HIV Project ETL:* Successful. No errors found in the log file for today."
+        return "*HIV Project ETL:* Successful. NO errors found in the log file for today."
 
     message = f"*HIV Project ETL:* ERRORS found in log file ({get_current_date()}):\n"
     for error in errors:
