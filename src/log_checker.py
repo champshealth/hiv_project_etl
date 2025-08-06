@@ -1,6 +1,6 @@
 import json
 import datetime
-from src.ci_slack import post_mesg_channel
+from include.ci_slack import post_mesg_channel
 from config.config import LOG_FILE, ERROR_LEVELS
 
 
