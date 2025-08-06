@@ -42,6 +42,8 @@ DATA_DICT_DIR = 'data_dictionaries'
 JOB_ID = uuid.uuid4()
 JOB_DATE = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 FILE_DATETIME = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+LOG_FILE = os.path.join(LOG_DIR, "hiv_project_etl_log.jsonl")
+ERROR_LEVELS = ["ERROR", "CRITICAL"] # error levels to check for in the log file and slack message
 
 # Pre-requisite: these redcap data dict files should be in the data_dictionaires directory
 #  and add the following files to the data directory
