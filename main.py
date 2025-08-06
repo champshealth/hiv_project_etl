@@ -13,8 +13,7 @@ from src.db_upsert_death_notif_data import upsert_death_notif_data
 from src.db_upsert_mits_specimen_collect import upsert_mits_specimen_collect
 from src.db_load_abstraction import db_load_clinical_abstraction
 from src.db_upsert_cplwidget_data import upsert_cpl_widget_aggregate
-# testting sierra_leone export issue debugging
-# from src.test_sierra_leone_extract import test_sierra_leone_extract
+from src.log_checker import check_log_and_notify
 
 if __name__ == '__main__':
     logger.info('Starting main script')
@@ -77,6 +76,8 @@ if __name__ == '__main__':
             upsert_cpl_widget_aggregate()
 
         logger.info('Finished main script')
+        check_log_and_notify()
     except Exception as e:
         logger.error(f'ERROR: {e}')
+        check_log_and_notify()
         raise e

@@ -113,11 +113,49 @@ This project is a data pipeline that processes data from the HIV project. This p
      ```bash
      python -c "from src.db_utils import test_db_connection; test_db_connection()"
      ```
-   - Test dbt connection:
+   - Test dbt connection and configuration:
      ```bash
      cd dbt/hiv_project
-     dbt debug
+     dbt debug -t dev
      ```
+     
+     This command will validate your dbt configuration and database connection. A successful output should look like this:
+     ```
+     dbt version: 1.3.7
+     python version: 3.9.2
+     python path: /path/to/your/venv/bin/python
+     os info: macOS-15.5-arm64-arm-64bit
+     Using profiles.yml file at /Users/your_username/.dbt/profiles.yml
+     Using dbt_project.yml file at /path/to/your/project/dbt/hiv_project/dbt_project.yml
+
+     Configuration:
+       profiles.yml file [OK found and valid]
+       dbt_project.yml file [OK found and valid]
+
+     Required dependencies:
+      - git [OK found]
+
+     Connection:
+       server: your_sql_server
+       database: your_database
+       schema: your_schema
+       port: 1433
+       UID: your_username
+       client_id: None
+       authentication: sql
+       encrypt: True
+       trust_cert: True
+       retries: 1
+       Connection test: [OK connection ok]
+
+     All checks passed!
+     ```
+
+     If you encounter any issues, verify:
+     1. Your database server is running and accessible
+     2. The credentials in your `.env` file are correct
+     3. The ODBC driver is properly installed
+     4. Your user has the necessary permissions on the database
 
 ### Running the Pipeline
 
@@ -146,25 +184,55 @@ This project is a data pipeline that processes data from the HIV project. This p
 ### Data Pipeline Flow
 ```mermaid
 graph TD
-    A[REDCap HIV Projects] -->|Python ETL| B[SQL Server Raw Data]
-    B -->|dbt Transformations| C[Processed Tables & Views]
-    C -->|Views & Models| D[Reporting Layer]
-    D -->|Tableau| E[Decode Reports]
-    D -->|Python Export| F[Labkey Integration]
+    %% Data Sources
+    REDCAP11[REDCap Project 1.1] -->|API Export| PYTHON_ETL[Python ETL Process]
+    REDCAP31[REDCap Project 3.1] -->|API Export| PYTHON_ETL
+    REDCAP_CA[REDCap Clinical Abstraction] -->|API Export| PYTHON_ETL
     
-    subgraph DBT Processing
-    M1[Raw Models] -->|Staging| M2[Intermediate Models]
-    M2 -->|Transform| M3[Mart Models]
+    %% Python Processing
+    PYTHON_ETL -->|Process and Load| RAW_DB[SQL Server Raw Data]
+    
+    %% dbt Transformations
+    subgraph "dbt Transformations"
+        direction TB
+        STG[Staging Models] -->|Transform| INT[Intermediate Models]
+        INT -->|Aggregate| MART[Mart Models]
     end
     
-    B --> M1
-    M3 --> C
+    %% Data Flow
+    RAW_DB --> STG
+    MART --> REPORTING[Reporting Layer]
     
-    subgraph Data Quality
-    T1[dbt Tests] --> M1
-    T1 --> M2
-    T1 --> M3
+    %% Data Quality
+    DBT_TESTS[dbt Tests] --> STG
+    DBT_TESTS --> INT
+    DBT_TESTS --> MART
+    
+    %% Data Destinations
+    REPORTING -->|Tableau| DECODE_REPORTS[Decode Reports]
+    REPORTING -->|LabKey API| LABKEY[LabKey System]
+    
+    %% Additional Data Processing
+    subgraph "Python Data Processing"
+        CONSENT[Consent Records]
+        DEATH[Death Notifications]
+        MITS[MITS Processing]
+        SPECIMEN[Specimen Collection]
+        CPL[CPL Widget]
+        
+        CONSENT & DEATH & MITS & SPECIMEN & CPL -->|Upsert| RAW_DB
     end
+    
+    %% Styling
+    classDef source fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef process fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef storage fill:#bfb,stroke:#333,stroke-width:2px;
+    classDef destination fill:#fbb,stroke:#333,stroke-width:2px;
+    
+    class REDCAP11,REDCAP31,REDCAP_CA source;
+    class PYTHON_ETL,STG,INT,MART,CONSENT,DEATH,MITS,SPECIMEN,CPL process;
+    class RAW_DB,REPORTING storage;
+    class DECODE_REPORTS,LABKEY destination;
 ```
 
 ### Directory Structure
