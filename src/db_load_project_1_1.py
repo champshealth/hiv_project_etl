@@ -80,7 +80,7 @@ def process_chunk(chunk_df):
                         )
                         SELECT p.*, site_cte.site_id, site_cte.catchment_id, site_cte.champs_id 
                         from chunk_df p
-                        join site_cte on p.record = site_cte.record 
+                        join site_cte on p.record = site_cte.record and p.site_id = site_cte.site_id 
                     """).fetch_df()
     return result
 
