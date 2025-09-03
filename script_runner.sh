@@ -3,7 +3,7 @@
 # only used from the cron job on the server cmpjobprod1
 . /opt/jobs/scripts/scripts_py39.env
 # activate venv
-source /opt/jobs/scripts/hiv_project_etl/venv/bin/activate
+source $SCRIPT_DIR/hiv_project_etl/venv/bin/activate
 # echo which python
 echo `which python`
 TODAY=`date +%Y_%m_%d_%H_%M_%S`
