@@ -10,9 +10,13 @@
 SELECT
   SequenceId,
   FormName,
+  FormSequenceId,
+  SectionHeader,
   FieldName,
   FieldLabel,
   FieldType,
+  ReportType,
   FileName,
-  CreatedOn
+  CreatedOn,
+  Active
 FROM {{ source('hiv_data_staging', 'HIVDataDictProj3_1') }}

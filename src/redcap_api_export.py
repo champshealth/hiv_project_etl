@@ -40,7 +40,7 @@ def convert_flat_to_eav(flat_df):
         var_name='field_name', 
         value_name='value'
     )
-    print("columns after melt:", eav_df.columns)
+    # print("columns after melt:", eav_df.columns)
     # rename the record_id_col to 'record' to match default eav EAV format
     eav_df = eav_df.rename(columns={record_id_col: 'record'})
 

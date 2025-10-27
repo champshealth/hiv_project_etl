@@ -31,20 +31,6 @@ def db_load_project_3_1(df: pd.DataFrame = None) -> None:
             
             # Load data dictionary data 
             if not data_dict_df.empty:
-            #     if len(data_dict_df) > 1000:
-            #         dict_chunk_size = 1000
-            #         dict_total_chunks = (len(data_dict_df) + dict_chunk_size - 1) // dict_chunk_size
-            #         logger.info(f'Loading data dictionary in {dict_total_chunks} chunks of {dict_chunk_size} rows each...')
-                    
-            #         dict_total_rows = 0
-            #         for i in range(0, len(data_dict_df), dict_chunk_size):
-            #             dict_chunk = data_dict_df[i:i+dict_chunk_size]
-            #             dict_rows_added = fast_insert_with_executemany(conn, DATA_DICT_TABLE_31, DB_SCHEMA, dict_chunk, batch_size=dict_chunk_size)
-            #             dict_total_rows += dict_rows_added
-            #             logger.info(f'Loaded dictionary chunk {(i//dict_chunk_size)+1}/{dict_total_chunks} with {dict_rows_added} rows.')
-                    
-            #         logger.info(f'Loaded {dict_total_rows} rows into Project 3.1 DATA DICTIONARY table: {DATA_DICT_TABLE_31}.')
-            #     else:
             # For small data dictionary, use standard to_sql
                 data_dict_insert = data_dict_df.to_sql(DATA_DICT_TABLE_31, conn, schema='stg', if_exists='append', index=False)
                 logger.info(f'Loaded {data_dict_insert} rows into Project 3.1 DATA DICTIONARY table: {DATA_DICT_TABLE_31}.')
