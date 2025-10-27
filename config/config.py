@@ -47,8 +47,8 @@ ERROR_LEVELS = ["ERROR", "CRITICAL"] # error levels to check for in the log file
 
 # Pre-requisite: these redcap data dict files should be in the data_dictionaires directory
 #  and add the following files to the data directory
-REDCAP_DATA_DICT_FILE_11 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject1_1_DataDict_2024-12-11.csv')
-REDCAP_DATA_DICT_FILE_CA = os.path.join(DATA_DICT_DIR, 'AdultHIVClinicalAbstr_DataDict_2024-10-30.csv') 
+REDCAP_DATA_DICT_FILE_11 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject1_1_DataDict_2024-12-13.csv')
+REDCAP_DATA_DICT_FILE_CA = os.path.join(DATA_DICT_DIR, 'AdultHIVClinicalAbstr_DataDict_2024-11-01.csv') 
 REDCAP_DATA_DICT_FILE_31 = os.path.join(DATA_DICT_DIR, 'AdultHIVProject3_1_DataDict_2025-01-28.csv')
 
 # these files are appended to the data dict files since they are not included in the REDCap data dictionary exports

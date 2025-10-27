@@ -17,11 +17,15 @@ select
     else ca.FieldValue 
   end as FieldValueLabel,
   dict.[FormName], 
+  dict.FormSequenceId,
+  dict.[SectionHeader],
   dict.[FieldLabel], 
   dict.FieldType, 
-  dict.SequenceId
+  dict.SequenceId,
+  dict.ReportType
 from {{ ref('HIVClinicalAbstract') }} ca
 left join {{ source('dbo', 'vw_champs_codes_distinct') }} ccd on ca.FieldValue = ccd.champs_local_code
 left join {{ ref('HIVDataDictClinicalAbstr') }} dict on ca.FieldName = dict.FieldName
 where ca.IsDeleted = 0
+and dict.Active = 1
 and ca.FieldName != concat(dict.FormName, '_complete') -- Exclude completion field

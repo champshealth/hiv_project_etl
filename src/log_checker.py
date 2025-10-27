@@ -21,7 +21,7 @@ def check_for_errors(log_file, current_date):
     errors = []
     with open(log_file, "r") as f:
         lines = f.readlines()
-        last_lines = lines[-400:]  # Get the last 400 lines from the log file
+        last_lines = lines[-2000:]  # Get the last 2000 lines from the log file
         for line in last_lines:
             log_entry = parse_log_entry(line)
             if log_entry is None:

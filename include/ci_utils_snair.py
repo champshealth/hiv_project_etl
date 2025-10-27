@@ -21,28 +21,29 @@ class connect_db():
     # CHAMPS SQL Sever  database connections.
     import sqlalchemy
     import os
-    # ss_driver = 'driver=ODBC+Driver+17+for+SQL+Server'
-    ss_driver = 'driver=/opt/homebrew/Cellar/msodbcsql18/18.4.1.1/lib/libmsodbcsql.18.dylib'
+    # Use the full path to the ODBC driver
+    driver_path = '/opt/homebrew/Cellar/msodbcsql17/17.10.6.1/lib/libmsodbcsql.17.dylib'
+    ss_driver = f'driver={driver_path}'
     conn_prod_rpt = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_prod_reporting?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_prod_reporting?' + ss_driver)
     conn_qa_rpt = sqlalchemy.create_engine(
-        "mssql+pyodbc://champs_measure:" + db_pwd + "@cmpsqldev101/champs_qa_reporting?" + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        "mssql+pyodbc://champs_measure:" + db_pwd + "@cmpsqldev101/champs_qa_reporting?" + ss_driver)
     conn_prod = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_prod?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_prod?' + ss_driver)
     conn_prod_aux = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_auxiliary?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_auxiliary?' + ss_driver)
     conn_dev = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_dev?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_dev?' + ss_driver)
     conn_stg = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_stg?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_stg?' + ss_driver)
     conn_stg_rpt = sqlalchemy.create_engine(
-        "mssql+pyodbc://champs_measure:" + db_pwd + "@cmpsqldev101/champs_stg_reporting?" + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        "mssql+pyodbc://champs_measure:" + db_pwd + "@cmpsqldev101/champs_stg_reporting?" + ss_driver)
     conn_dev_aux = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_auxiliary?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_auxiliary?' + ss_driver)
     conn_qa = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_qa?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_qa?' + ss_driver)
     conn_qa_aux = sqlalchemy.create_engine(
-        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_auxiliary?' + ss_driver + '&TrustServerCertificate=yes&Encrypt=yes')
+        'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqldev101/champs_auxiliary?' + ss_driver)
 
 
 
