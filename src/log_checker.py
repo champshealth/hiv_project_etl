@@ -27,7 +27,7 @@ def check_for_errors(log_file, current_date):
             if log_entry is None:
                 continue #Skip if the JSON is bad.
 
-            log_date = log_entry.get("asctime", "").split(" ")[0] #Extract the date part.
+            log_date = log_entry.get("log_date", "").split(" ")[0] #Extract the date part from log_date field.
             log_level = log_entry.get("levelname", "")
             # Check if the log entry is from today and has an error level
             if log_date == current_date and log_level in ERROR_LEVELS:
