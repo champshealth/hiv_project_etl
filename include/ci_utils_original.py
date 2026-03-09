@@ -21,9 +21,7 @@ class connect_db():
     # CHAMPS SQL Sever  database connections.
     import sqlalchemy
     import os
-    # Use the full path to the ODBC driver
-    driver_path = '/opt/homebrew/Cellar/msodbcsql17/17.10.6.1/lib/libmsodbcsql.17.dylib'
-    ss_driver = f'driver={driver_path}'
+    ss_driver = 'driver=ODBC+Driver+17+for+SQL+Server'
     conn_prod_rpt = sqlalchemy.create_engine(
         'mssql+pyodbc://champs_measure:' + db_pwd + '@cmpsqlprd101/champs_prod_reporting?' + ss_driver)
     conn_qa_rpt = sqlalchemy.create_engine(

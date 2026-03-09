@@ -45,3 +45,7 @@ tokens_ca:
   - name: all_sites
     env_key: REDCAP_API_TOKEN_CA
     description: "REDCap API token for all HIV sites Clinical Abstraction"
+tokens_61:
+  - name: all_sites
+    env_key: REDCAP_API_TOKEN_61
+    description: "REDCap API token for all HIV sites 6.1 project"

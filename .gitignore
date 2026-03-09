@@ -9,3 +9,4 @@ logs/
 *.pyc
 .vscode/mcp.json
 venv/
+docs/.ai/

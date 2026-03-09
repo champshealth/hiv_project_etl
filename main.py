@@ -1,12 +1,14 @@
 import os
 import subprocess
 import datetime
-from config.config import (REDCAP_11_TOKENS, REDCAP_31_TOKENS, REDCAP_CA_TOKENS, REDCAP_API_TOKEN_31, REDCAP_API_TOKEN_CA,
-                     REDCAP_EXPORT_FILE_11, REDCAP_EXPORT_FILE_31, REDCAP_EXPORT_FILE_CA, ENV)
+from config.config import (REDCAP_11_TOKENS, REDCAP_31_TOKENS, REDCAP_CA_TOKENS, REDCAP_61_TOKENS, 
+                     REDCAP_API_TOKEN_31, REDCAP_API_TOKEN_CA, REDCAP_EXPORT_FILE_11, 
+                     REDCAP_EXPORT_FILE_31, REDCAP_EXPORT_FILE_CA, REDCAP_EXPORT_FILE_61, ENV)
 from src.redcap_api_export import redcap_api_export
 from src.logging_config import logger
 from src.db_load_project_1_1 import db_load_project_1_1
 from src.db_load_project_3_1 import db_load_project_3_1
+from src.db_load_project_6_1 import db_load_project_6_1
 from src.db_upsert_consent_data import upsert_consent_records
 from src.db_upsert_mits_proc_data import upsert_mits_proc_data
 from src.db_upsert_death_notif_data import upsert_death_notif_data
@@ -33,9 +35,13 @@ if __name__ == '__main__':
             db_load_project_3_1(df=df)
 
 
-            # # clinical abstraction data load
+            # clinical abstraction data load
             df = redcap_api_export(REDCAP_CA_TOKENS, REDCAP_EXPORT_FILE_CA)
             db_load_clinical_abstraction(df=df)
+            
+            # project 6.1 data load
+            df = redcap_api_export(REDCAP_61_TOKENS, REDCAP_EXPORT_FILE_61)
+            db_load_project_6_1(df=df)
 
             # run dbt step to load the data into the hiv schema
             # Run dbt commands in the dbt project directory as a subprocess
