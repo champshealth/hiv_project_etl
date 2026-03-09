@@ -100,7 +100,39 @@ sources:
             description: "Name of the HIV report"
             tests:
               - not_null
-        
+      - name: HIVProject6_1_stg
+        description: "HIV Project 6.1 data in EAV format"
+        tests:
+          - assert_table_has_rows:
+              min_rows: 1
+        columns:
+          - name: Id
+            description: "Unique identifier for the record"
+            tests:
+              - not_null
+              - unique
+          - name: PacketVersionId
+            description: "Packet version identifier"
+            tests:
+              - not_null
+          - name: ChampsId
+            description: "CHAMPS identifier"
+            tests:
+              - not_null
+          - name: RepeatInstrument
+            description: "Name of the repeated instrument, if any"
+          - name: RepeatInstance
+            description: "Instance number for repeated instruments"
+          - name: FieldName
+            description: "Name of the field"
+            tests:
+              - not_null
+          - name: FieldValue
+            description: "Value of the field"
+          - name: CreatedOn
+            description: "Timestamp when the record was created"
+            tests:
+              - not_null        
   - name: hiv_data_views
     description: "Views for HIV data processing"
     # database: CHAMPS_QA

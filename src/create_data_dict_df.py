@@ -38,11 +38,23 @@ def create_data_dict_df(data_dict_file_name:str, data_dict_append_file_name:str)
     data_dict_df['FileName'] = data_dict_file_name.split('/')[-1]
     
     # Set the data types for all fields in the data_dict_df
-    # Fill NaN values in integer columns with 0 before converting to int
-    data_dict_df['Active'] = data_dict_df['Active'].fillna('0')
-    data_dict_df['form_sequence_id'] = data_dict_df['form_sequence_id'].fillna('0')
-    data_dict_df = data_dict_df.astype({'sequence': int, 'field_name': str, 'form_name': str, 'section_header': str, 'field_type': str, 
-                                      'field_label': str, 'CreatedOn': 'datetime64[ns]', 'FileName': str, 'Active': int, 'form_sequence_id': int})
+    # Fill NaN and empty strings in integer columns with 0 before converting to int
+    data_dict_df['Active'] = data_dict_df['Active'].replace('', '0').fillna('0')
+    data_dict_df['form_sequence_id'] = data_dict_df['form_sequence_id'].replace('', '0').fillna('0')
+    
+    # Convert columns to appropriate types
+    data_dict_df = data_dict_df.astype({
+        'sequence': int, 
+        'field_name': str, 
+        'form_name': str, 
+        'section_header': str, 
+        'field_type': str, 
+        'field_label': str, 
+        'CreatedOn': 'datetime64[ns]', 
+        'FileName': str, 
+        'Active': int, 
+        'form_sequence_id': int
+    })
     
     # Select and rename columns as in the database table
     data_dict_df = data_dict_df[['sequence', 'form_name', 'field_name', 'section_header', 'field_label', 'field_type', 'FileName', 'CreatedOn', 'Active', 'form_sequence_id']]
