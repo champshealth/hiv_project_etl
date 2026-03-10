@@ -10,7 +10,7 @@ This project is a data pipeline that processes data from the HIV project. This p
 - **Git**
 - **ODBC Driver 17+ for SQL Server**
 - **Access to SQL Server database** with appropriate permissions
-- **Access to REDCap API** with required tokens for projects 1.1, 3.1, and CA
+- **Access to REDCap API** with required tokens for projects 1.1, 3.1, 6.1, and CA
 - **Required Python packages** (will be installed via requirements.txt):
   - dbt-core and dbt-sqlserver
   - pandas and numpy for data processing
@@ -76,6 +76,7 @@ This project is a data pipeline that processes data from the HIV project. This p
    REDCAP_API_URL=your_redcap_api_url
    REDCAP_API_TOKEN_11=your_redcap_project_11_token
    REDCAP_API_TOKEN_31=your_redcap_project_31_token
+   REDCAP_API_TOKEN_6_1=your_redcap_project_6_1_token
    REDCAP_API_TOKEN_CA=your_redcap_ca_token
    
    # Optional: LabKey Configuration
@@ -187,6 +188,7 @@ graph TD
     %% Data Sources
     REDCAP11[REDCap Project 1.1] -->|API Export| PYTHON_ETL[Python ETL Process]
     REDCAP31[REDCap Project 3.1] -->|API Export| PYTHON_ETL
+    REDCAP61[REDCap Project 6.1] -->|API Export| PYTHON_ETL
     REDCAP_CA[REDCap Clinical Abstraction] -->|API Export| PYTHON_ETL
     
     %% Python Processing
@@ -229,7 +231,7 @@ graph TD
     classDef storage fill:#bfb,stroke:#333,stroke-width:2px;
     classDef destination fill:#fbb,stroke:#333,stroke-width:2px;
     
-    class REDCAP11,REDCAP31,REDCAP_CA source;
+    class REDCAP11,REDCAP31,REDCAP61,REDCAP_CA source;
     class PYTHON_ETL,STG,INT,MART,CONSENT,DEATH,MITS,SPECIMEN,CPL process;
     class RAW_DB,REPORTING storage;
     class DECODE_REPORTS,LABKEY destination;
@@ -257,12 +259,64 @@ This project uses dbt (data build tool) for data transformation and modeling. Th
 - Data tests and validations
 - Documentation for all models and transformations
 
+### Recent Updates & Improvements
+
+#### March 2026 Updates
+- **Added Project 6.1 Support**: Full integration of the Enhanced HIV Surveillance project
+  - Implemented repeat instrument and instance handling
+  - Fixed MERGE statement conflicts in dbt transformations
+  - Added comprehensive indexing for performance optimization
+- **Updated REDCap API Endpoint**: Migrated to `https://champs-redcap.emory.edu/api/`
+- **Enhanced Database Connectivity**: Resolved ODBC driver compatibility issues
+- **Pipeline Performance**: Optimized data loading and transformation processes
+- **Data Quality Improvements**: Enhanced validation for ChampsId format and duplicate handling
+
+#### Key Technical Improvements
+- **MERGE Statement Fix**: Resolved duplicate row conflicts in HIVProject6_1 model by updating unique key configuration
+- **ODBC Driver Updates**: Updated to use msodbcsql18 with proper SSL certificate handling
+- **Virtual Environment Support**: Improved dependency management and environment isolation
+- **Enhanced Logging**: Better error tracking and pipeline monitoring
+
+---
+
 ### Documentation
 The project documentation is:
 - Generated using dbt docs
 - Available in the `docs/` directory
 - Hosted on GitHub Pages at [project-url]
 - Contains complete data lineage and transformation documentation
+
+### Supported REDCap Projects
+
+The pipeline currently processes data from the following REDCap projects:
+
+#### Project 1.1 - Adult HIV Study
+- **Sites**: Kenya, Mozambique, Sierra Leone, South Africa
+- **Data Structure**: EAV format with site_id field
+- **Staging Table**: `stg.HIVProject1_1_stg`
+- **Data Dictionary**: `stg.HIVDataDictProj1_1`
+
+#### Project 3.1 - Adult HIV Follow-up Study
+- **Sites**: All sites (single token)
+- **Data Structure**: EAV format
+- **Staging Table**: `stg.HIVProject3_1_stg`
+- **Data Dictionary**: `stg.HIVDataDictProj3_1`
+
+#### Project 6.1 - Enhanced HIV Surveillance
+- **Sites**: All sites (single token)
+- **Data Structure**: EAV format with repeat instruments
+- **Staging Table**: `stg.HIVProject6_1_stg`
+- **Data Dictionary**: `stg.HIVDataDictProj6_1`
+- **Key Features**: 
+  - Support for repeat instruments and instances
+  - Unique key: `[PacketVersionId, ChampsId, RepeatInstrument, RepeatInstance, FieldName]`
+  - Indexed on ChampsId and FieldName for performance
+
+#### Clinical Abstraction Project
+- **Sites**: All sites (single token)
+- **Data Structure**: EAV format
+- **Staging Table**: `stg.HIVClinicalAbstract_stg`
+- **Data Dictionary**: `stg.HIVDataDictClinicalAbstr`
 
 ### Database Objects Deployment
 
@@ -280,7 +334,25 @@ Follow these steps to set up the database objects:
      - Views second
      - Stored procedures last
 
-3. **Load Tableau report definitions**
+3. **Verify Project 6.1 table structure**
+   The Project 6.1 staging table includes these key features:
+   ```sql
+   CREATE TABLE [stg].[HIVProject6_1_stg](
+       [Id] [varchar](100) PRIMARY KEY NOT NULL default NEWID(),
+       [PacketVersionId] [varchar](100) NOT NULL,
+       [ChampsId] [varchar](9) NOT NULL,
+       [RepeatInstrument] [varchar](100) NULL,
+       [RepeatInstance] [varchar](3) NULL,
+       [FieldName] [varchar](100) NULL,
+       [FieldValue] [varchar](max) NULL,
+       [CreatedOn] [datetime2](7) NOT NULL default GETDATE()
+   );
+   ```
+   - **Indexes**: Created on ChampsId and FieldName for query performance
+   - **Primary Key**: Auto-generated GUID for unique identification
+   - **Data Validation**: ChampsId field validated for 9-character format
+
+4. **Load Tableau report definitions**
    ```bash
    # Load report definitions from CSV file
    python -c "
@@ -314,7 +386,15 @@ Follow these steps to set up the database objects:
 Make sure all required environment variables are set:
 ```bash
 # Check if variables are set
-echo $DB_SERVER
-echo $DB_DATABASE
+echo $REDCAP_URL
+echo $ENV
+echo $DB_SCHEMA
 # etc.
 ```
+
+**Required Environment Variables:**
+- `REDCAP_URL`: REDCap API endpoint (updated to https://champs-redcap.emory.edu/api/)
+- `ENV`: Environment setting (dev/staging/prod)
+- `DB_SCHEMA`: Database schema name (hiv)
+- `REDCAP_API_TOKEN_6_1`: Project 6.1 API token
+- All other project tokens as listed above
