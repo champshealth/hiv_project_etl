@@ -6,89 +6,166 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import pandas as pd
+import duckdb
+import gc
 from config.config import REDCAP_URL
 from requests.exceptions import RequestException
 from src.logging_config import logger
 
-def convert_flat_to_eav(flat_df):
-    """Convert flat dataframe to EAV format with checkbox field handling"""
-    # Get the record identifier column (usually first column)
-    record_id_col = flat_df.columns[0]
-
-    # Check for redcap_repeat* columns to include in id_vars for unpivot (melt)
+def _get_eav_columns(flat_df):
+    """Helper to determine EAV output columns based on flat dataframe structure."""
+    columns = ['record', 'field_name', 'value']
     has_repeat_instrument = 'redcap_repeat_instrument' in flat_df.columns
     has_repeat_instance = 'redcap_repeat_instance' in flat_df.columns
+    has_site_id = 'site_id' in flat_df.columns
     
-    # Define id_vars with record_id_col initially
-    # and add site_id if it exists as in project 1.1
-    # site_id is not always present in all projects, so check for its existence
-    id_vars = [record_id_col]
-    if 'site_id' in flat_df.columns:
-        id_vars.append('site_id')   
-        print("Site ID column found in flat dataframe and added to id_vars")
-    
-    # include repeat columns in id_vars if they exist for melt
+    if has_site_id:
+        columns.insert(1, 'site_id')
     if has_repeat_instrument:
-        id_vars.append('redcap_repeat_instrument')
+        idx = 1 if not has_site_id else 2
+        columns.insert(idx, 'redcap_repeat_instrument')
     if has_repeat_instance:
-        id_vars.append('redcap_repeat_instance')
+        idx = 1
+        if has_site_id:
+            idx += 1
+        if has_repeat_instrument:
+            idx += 1
+        columns.insert(idx, 'redcap_repeat_instance')
     
-    # melt unpivot the flat dataframe to mimc redcap EAV format
-    # ouput column ->  record, redcap_repeat_instrument, redcap_repeat_instance, field_name, value
-    eav_df = flat_df.melt(
-        id_vars=id_vars, 
-        var_name='field_name', 
-        value_name='value'
-    )
-    # print("columns after melt:", eav_df.columns)
-    # rename the record_id_col to 'record' to match default eav EAV format
-    eav_df = eav_df.rename(columns={record_id_col: 'record'})
+    return columns, has_site_id, has_repeat_instrument, has_repeat_instance
 
-    # Handle checkbox fields using fields with double underscorE
-    checkbox_mask = eav_df['field_name'].str.contains('___', na=False)
-    checkbox_rows = eav_df[checkbox_mask].copy()
-    non_checkbox_rows = eav_df[~checkbox_mask]
-    
-    # For checkbox fields where value=1, extract code and update field name
-    # and remove ___code from field names
-    #  for example fieldname___ch01234 will be converted to fieldname with value ch01234
-    if not checkbox_rows.empty:
-        # Extract the code from field name when value is 1
-        checkbox_rows.loc[checkbox_rows['value'] == '1', 'value'] = \
-            checkbox_rows.loc[checkbox_rows['value'] == '1', 'field_name'].str.extract(r'___(.+)$')[0]
+
+def _process_chunk_with_duckdb(chunk_df, record_id_col, columns, has_site_id, has_repeat_instrument, has_repeat_instance):
+    """Process a single chunk using DuckDB for memory-efficient EAV transformation."""
+    conn = duckdb.connect()
+    try:
+        # Register the chunk as a temporary table
+        conn.execute("CREATE TEMPORARY TABLE chunk_df AS SELECT * FROM chunk_df")
         
-        # Remove ___code from field names
-        checkbox_rows['field_name'] = checkbox_rows['field_name'].str.replace(r'___.*$', '', regex=True)
+        # Build UNPIVOT query dynamically based on available columns
+        id_cols = [f'"{record_id_col}" AS record']
+        if has_site_id:
+            id_cols.append('"site_id"')
+        if has_repeat_instrument:
+            id_cols.append('redcap_repeat_instrument')
+        if has_repeat_instance:
+            id_cols.append('redcap_repeat_instance')
         
-        # Filter out rows where value is 0
-        checkbox_rows = checkbox_rows[checkbox_rows['value'] != '0']
+        id_cols_str = ', '.join(id_cols)
         
-        # Combine checkbox and non-checkbox rows
-        eav_df = pd.concat([non_checkbox_rows, checkbox_rows])
+        # Get all field columns (exclude id columns)
+        exclude_cols = [record_id_col, 'site_id', 'redcap_repeat_instrument', 'redcap_repeat_instance']
+        field_cols = [c for c in chunk_df.columns if c not in exclude_cols]
+        
+        # Build UNPIVOT query
+        field_cols_quoted = ', '.join([f'"{c}"' for c in field_cols])
+        
+        unpivot_query = f"""
+            SELECT 
+                {id_cols_str},
+                field_name,
+                value::VARCHAR as value
+            FROM chunk_df
+            UNPIVOT (
+                value FOR field_name IN ({field_cols_quoted})
+            )
+            WHERE value IS NOT NULL AND TRIM(value::VARCHAR) != ''
+        """
+        
+        eav_df = conn.execute(unpivot_query).fetchdf()
+        
+        # Handle checkbox fields
+        if not eav_df.empty:
+            checkbox_mask = eav_df['field_name'].str.contains('___', na=False)
+            if checkbox_mask.any():
+                checkbox_rows = eav_df[checkbox_mask].copy()
+                non_checkbox_rows = eav_df[~checkbox_mask]
+                
+                # Extract code from field name when value is 1
+                checkbox_rows.loc[checkbox_rows['value'] == '1', 'value'] = \
+                    checkbox_rows.loc[checkbox_rows['value'] == '1', 'field_name'].str.extract(r'___(.+)$')[0]
+                
+                # Remove ___code from field names
+                checkbox_rows['field_name'] = checkbox_rows['field_name'].str.replace(r'___.*$', '', regex=True)
+                
+                # Filter out rows where value is 0
+                checkbox_rows = checkbox_rows[checkbox_rows['value'] != '0']
+                
+                # Combine
+                eav_df = pd.concat([non_checkbox_rows, checkbox_rows], ignore_index=True)
+        
+        # Ensure proper column order
+        eav_df = eav_df[columns]
+        
+        # Convert all to string
+        for col in eav_df.columns:
+            eav_df[col] = eav_df[col].astype(str)
+        
+        return eav_df
+    finally:
+        conn.close()
+
+
+def convert_flat_to_eav(flat_df, chunk_size=5000):
+    """
+    Convert flat dataframe to EAV format with checkbox field handling.
+    Uses chunked processing with DuckDB for memory efficiency.
     
-    # Drop rows where value is None, NaN, or blank
-    eav_df = eav_df.dropna(subset=['value'])
-    eav_df = eav_df[eav_df['value'].astype(str).str.strip() != '']
+    Args:
+        flat_df: Input dataframe in flat format
+        chunk_size: Number of rows to process per chunk (default 5000)
     
-    # Convert all values to strings
-    eav_df['value'] = eav_df['value'].astype(str)
-    eav_df['field_name'] = eav_df['field_name'].astype(str)
-    eav_df['record'] = eav_df['record'].astype(str)
-    # eav_df['site_id'] = eav_df['site_id'].astype(str) if 'site_id' in eav_df.columns else None
+    Returns:
+        DataFrame in EAV format
+    """
+    if flat_df.empty:
+        return pd.DataFrame(columns=['record', 'field_name', 'value'])
     
-    # Ensure columns are in the correct order for REDCap EAV format
-    columns = ['record', 'site_id', 'field_name', 'value'] if 'site_id' in eav_df.columns else ['record', 'field_name', 'value']
+    # Get record identifier column
+    record_id_col = flat_df.columns[0]
     
-    # Add repeat columns if they exist
-    if 'redcap_repeat_instrument' in eav_df.columns:
-        columns.insert(1, 'redcap_repeat_instrument')
-    if 'redcap_repeat_instance' in eav_df.columns:
-        columns.insert(2 if 'redcap_repeat_instrument' in eav_df.columns else 1, 'redcap_repeat_instance')
+    # Determine output columns
+    columns, has_site_id, has_repeat_instrument, has_repeat_instance = _get_eav_columns(flat_df)
     
-    # Reorder and sort
-    eav_df = eav_df[columns]
-    eav_df = eav_df.sort_values(['record', 'field_name'])
-    return eav_df
+    total_rows = len(flat_df)
+    
+    # For small datasets, process directly
+    if total_rows <= chunk_size:
+        return _process_chunk_with_duckdb(
+            flat_df, record_id_col, columns, 
+            has_site_id, has_repeat_instrument, has_repeat_instance
+        )
+    
+    # Process in chunks for large datasets
+    logger.info(f"Processing {total_rows} rows in chunks of {chunk_size} for EAV conversion")
+    results = []
+    num_chunks = (total_rows + chunk_size - 1) // chunk_size
+    
+    for i in range(num_chunks):
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, total_rows)
+        chunk = flat_df.iloc[start_idx:end_idx].copy()
+        
+        logger.info(f"Processing chunk {i+1}/{num_chunks} (rows {start_idx}-{end_idx})")
+        
+        result = _process_chunk_with_duckdb(
+            chunk, record_id_col, columns,
+            has_site_id, has_repeat_instrument, has_repeat_instance
+        )
+        results.append(result)
+        
+        # Clear memory
+        del chunk
+        gc.collect()
+    
+    # Combine all results
+    final_df = pd.concat(results, ignore_index=True)
+    
+    # Sort by record and field_name
+    final_df = final_df.sort_values(['record', 'field_name']).reset_index(drop=True)
+    
+    logger.info(f"Completed EAV conversion: {len(final_df)} rows from {total_rows} flat rows")
+    return final_df
 
 def redcap_api_export(redcap_tokens: list, output_file) -> pd.DataFrame:
     """
