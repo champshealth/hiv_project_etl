@@ -15,11 +15,11 @@ SELECT
     getdate() as DemographicsModifiedOn,
     mproc.CreatedOn as MITSProcedureModifiedOn,
     ca.CreatedOn as ChildAbstractionModifiedOn,
-    sp.SitePathDiagModifiedOn,
-    sp.SitePathFindingModifiedOn,
-    sp.SitePathTissueModifiedOn,
-    lab_placenta.LaboratoryResultsModifiedOn,
-    lab_placenta.PlacentaExaminationModifiedOn,
+    sp_lab.SitePathDiagModifiedOn,
+    sp_lab.SitePathFindingModifiedOn,
+    sp_lab.SitePathTissueModifiedOn,
+    sp_lab.LaboratoryResultsModifiedOn,
+    sp_lab.PlacentaExaminationModifiedOn,
     dn.SiteId as SiteGuid,
     Site.Name as SiteName
 FROM {{ ref('vw_HIVDeathNotification') }} dn
@@ -29,51 +29,36 @@ JOIN {{ source('dbo', 'ConsentTracking') }} ct ON dn.ReportId = ct.ReportId
     AND dn.SiteId = ct.SiteId
     AND dn.CatchmentId = ct.CatchmentId
 LEFT JOIN (
-    SELECT DISTINCT 
-        ChampsId, 
-        max(cast(CreatedOn as date)) as CreatedOn
+    SELECT ChampsId, MAX(cast(CreatedOn as date)) as CreatedOn
     FROM {{ ref('HIVClinicalAbstract') }}
-    group by ChampsId
-) ca ON ct.ChampsId = ca.ChampsId
-LEFT JOIN (SELECT [SiteId] ,[ChampsId] ,[FileName] ,cast(CreatedOn as date) CreatedOn
-            FROM {{ ref('vw_HIVMitsProcedure') }}
-            where SiteId is not null 
-            ) mproc 
-            on ct.ChampsId = mproc.ChampsId 
-            and ct.[FileName] = mproc.[FileName] --'adult_hiv_study'
-LEFT JOIN (
-    SELECT 
-        ChampsId,
-        FormName,  
-        max(cast(CreatedOn as date)) as SitePathDiagModifiedOn,
-        max(cast(CreatedOn as date)) as SitePathFindingModifiedOn,
-        max(cast(CreatedOn as date)) as SitePathTissueModifiedOn
-    FROM {{ ref('vw_HIVProject3_1_rpt') }}
-    WHERE FormName = 'site_pathology_report'
-    GROUP BY ChampsId, FormName
-) sp ON ct.ChampsId = sp.ChampsId
-LEFT JOIN (
-    SELECT 
-        ChampsId,
-        MAX(CASE WHEN FormCategory = 'lab' THEN ModifiedDate END) as LaboratoryResultsModifiedOn,
-        MAX(CASE WHEN FormCategory = 'placenta' THEN ModifiedDate END) as PlacentaExaminationModifiedOn
-    FROM (
-        SELECT 
-            ChampsId,
-            CASE 
-                WHEN FormName IN ('ast','bld_microbiology_results','clinical_lab_results', 
-                                'csf_microbiology_results', 'lung_microbiology_results') 
-                THEN 'lab'
-                WHEN FormName IN ('placenta_microscopic_examination', 'placenta_gross_examination') 
-                THEN 'placenta'
-            END as FormCategory,
-            cast(CreatedOn as date) as ModifiedDate
-        FROM {{ ref('vw_HIVProject3_1_rpt') }}
-        WHERE FormName IN (
-            'ast','bld_microbiology_results','clinical_lab_results', 
-            'csf_microbiology_results', 'lung_microbiology_results',
-            'placenta_microscopic_examination', 'placenta_gross_examination'
-        )
-    ) src
     GROUP BY ChampsId
-) lab_placenta ON ct.ChampsId = lab_placenta.ChampsId
+) ca ON ct.ChampsId = ca.ChampsId
+LEFT JOIN (
+    SELECT [SiteId], [ChampsId], [FileName], cast(CreatedOn as date) CreatedOn
+    FROM {{ ref('vw_HIVMitsProcedure') }}
+    WHERE SiteId is not null
+) mproc ON ct.ChampsId = mproc.ChampsId
+       AND ct.[FileName] = mproc.[FileName] --'adult_hiv_study'
+LEFT JOIN (
+    SELECT
+        ChampsId,
+        MAX(CASE WHEN FormName = 'site_pathology_report'
+                 THEN cast(CreatedOn as date) END) as SitePathDiagModifiedOn,
+        MAX(CASE WHEN FormName = 'site_pathology_report'
+                 THEN cast(CreatedOn as date) END) as SitePathFindingModifiedOn,
+        MAX(CASE WHEN FormName = 'site_pathology_report'
+                 THEN cast(CreatedOn as date) END) as SitePathTissueModifiedOn,
+        MAX(CASE WHEN FormName IN ('ast','bld_microbiology_results','clinical_lab_results',
+                                   'csf_microbiology_results','lung_microbiology_results')
+                 THEN cast(CreatedOn as date) END) as LaboratoryResultsModifiedOn,
+        MAX(CASE WHEN FormName IN ('placenta_microscopic_examination','placenta_gross_examination')
+                 THEN cast(CreatedOn as date) END) as PlacentaExaminationModifiedOn
+    FROM {{ ref('vw_HIVProject3_1_rpt') }}
+    WHERE FormName IN (
+        'site_pathology_report',
+        'ast','bld_microbiology_results','clinical_lab_results',
+        'csf_microbiology_results','lung_microbiology_results',
+        'placenta_microscopic_examination','placenta_gross_examination'
+    )
+    GROUP BY ChampsId
+) sp_lab ON ct.ChampsId = sp_lab.ChampsId
