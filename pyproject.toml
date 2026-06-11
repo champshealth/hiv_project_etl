@@ -1,0 +1,21 @@
+[project]
+name = "hiv_project_etl"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-sqlserver>=1.8.0",
+    "pandas>=2.2.3",
+    "numpy>=1.26.0",
+    "duckdb>=1.2.1",
+    "pyodbc>=5.2.0",
+    "SQLAlchemy>=2.0.38",
+    "boto3>=1.35.0",
+    "watchtower>=3.3.0",
+    "slack-sdk>=3.29.0",
+    "labkey>=3.3.0",
+    "python-json-logger>=3.3.0",
+    "requests>=2.32.3",
+    "pyarrow>=19.0.1",
+    "python-dotenv>=1.0.1",
+    "pyyaml>=6.0",
+]

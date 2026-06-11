@@ -4,9 +4,7 @@ import json
 import sqlalchemy as sa
 import duckdb
 from typing import Optional, List
-from labkey.api_wrapper import APIWrapper
 from config.config import ENV, CONN
-from config.config import LABKEY_API_KEY, LABKEY_SERVER_URL, LABKEY_CONTAINER_PATH
 from src.extract_hiv_ddl_definitions import extract_hiv_table_ddl_definitions
 from src.logging_config import logger
 
@@ -97,10 +95,6 @@ def pivot_hiv_project1_1_data(df: pd.DataFrame) -> pd.DataFrame:
         logger.error(f"Error pivoting HIV Project 1.1 data: {str(e)}")
         raise
 
-
-# Initialize LabKey server context
-server_context = APIWrapper(f"{LABKEY_SERVER_URL}", container_path=f"{LABKEY_CONTAINER_PATH}" , 
-                          api_key=f"{LABKEY_API_KEY}", use_ssl=True)
 
 # def delete_all_rows_list(schema_name, query_name) -> bool:
 #     """Deletes all rows from a LabKey list using truncateTable."""

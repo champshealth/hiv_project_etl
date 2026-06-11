@@ -1,0 +1,39 @@
+hiv_project:
+  outputs:
+    dev:
+      type: sqlserver
+      driver: ODBC Driver 18 for SQL Server
+      server: "{{ env_var('DB_HOST') }}"
+      port: "{{ env_var('DB_PORT') | int }}"
+      database: "{{ env_var('DB_NAME') }}"
+      schema: hiv
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      authentication: sql
+      encrypt: yes
+      trust_cert: yes
+    stg:
+      type: sqlserver
+      driver: ODBC Driver 18 for SQL Server
+      server: "{{ env_var('DB_HOST') }}"
+      port: "{{ env_var('DB_PORT') | int }}"
+      database: "{{ env_var('DB_NAME') }}"
+      schema: hiv
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      authentication: sql
+      encrypt: yes
+      trust_cert: yes
+    prod:
+      type: sqlserver
+      driver: ODBC Driver 18 for SQL Server
+      server: "{{ env_var('DB_HOST') }}"
+      port: "{{ env_var('DB_PORT') | int }}"
+      database: "{{ env_var('DB_NAME') }}"
+      schema: hiv
+      user: "{{ env_var('DB_USER') }}"
+      password: "{{ env_var('DB_PASSWORD') }}"
+      authentication: sql
+      encrypt: yes
+      trust_cert: yes
+  target: "{{ env_var('APP_ENV', 'dev') }}"

@@ -1,5 +1,6 @@
 import pandas as pd
 import sqlalchemy as sa
+import gc
 from src.create_data_dict_df import create_data_dict_df
 from src.logging_config import logger
 from config.config import CONN, DB_SCHEMA ,REDCAP_DATA_DICT_FILE_31, REDCAP_DATA_DICT_APPEND_FILE_31, DATA_DICT_TABLE_31, DATA_TABLE_31
@@ -14,54 +15,61 @@ import multiprocessing
 # DATA_DICT_FILE_NAME = 'data/AdultHIVProject3_1_DataDict_2024-11-07.csv'
 # DATA_DICT_APPEND_FILE_NAME = 'data/AdultHIVProject3_1_DataDict_append.csv'
 
-def db_load_project_3_1(df: pd.DataFrame = None) -> None:
+def db_load_project_3_1(df: pd.DataFrame = None, parquet_files: list = None) -> None:
     logger.info('Starting db_load_project_3_1')
-    if df is None or df.empty:
+    if (df is None or df.empty) and not parquet_files:
         logger.info('No 3.1 data to load')
         return
     try:
         engine = CONN
         with engine.connect() as conn:
-            #  use function create_data_dict_df to create data dictionary file
             data_dict_df = create_data_dict_df(REDCAP_DATA_DICT_FILE_31, REDCAP_DATA_DICT_APPEND_FILE_31)
 
-            # truncate the data dictionary table
             truncate_data_dict = sa.text(f"TRUNCATE TABLE stg.{DATA_DICT_TABLE_31}")
             conn.execute(truncate_data_dict)
-            
-            # Load data dictionary data 
+
             if not data_dict_df.empty:
-            # For small data dictionary, use standard to_sql
                 data_dict_insert = data_dict_df.to_sql(DATA_DICT_TABLE_31, conn, schema='stg', if_exists='append', index=False)
                 logger.info(f'Loaded {data_dict_insert} rows into Project 3.1 DATA DICTIONARY table: {DATA_DICT_TABLE_31}.')
             else:
                 logger.info(f'No data dictionary rows to load for Project 3.1.')
 
-            # rename df columns to match the staging table columns names
-            df.columns = df.rename(columns= {'record': 'ChampsId','redcap_repeat_instrument': 'RepeatInstrument',
-                                            'redcap_repeat_instance': 'RepeatInstance', 
-                                            'field_name': 'FieldName', 'value': 'FieldValue'}).columns
-
-            #  truncate the 3.1 staging table
             truncate_stg = sa.text(f"TRUNCATE TABLE stg.{DATA_TABLE_31}")
             conn.execute(truncate_stg)
 
-            # Load data in chunks of 1000 rows for better performance
-            chunk_size = 1000
-            total_rows = 0
-            
-            # Display progress info
-            total_chunks = (len(df) + chunk_size - 1) // chunk_size
-            logger.info(f'Loading data in {total_chunks} chunks of {chunk_size} rows each...')
-            
-            for i in range(0, len(df), chunk_size):
-                chunk_df = df[i:i+chunk_size]
-                rows_added = fast_insert_with_executemany(conn, DATA_TABLE_31, 'stg', chunk_df, batch_size=chunk_size)
-                total_rows += rows_added
-                logger.info(f'Loaded chunk {(i//chunk_size)+1}/{total_chunks} with {rows_added} rows.')
-            
-            logger.info(f'Finished db_load_project_3_1. Loaded {total_rows} rows into Project 3.1 data table: {DATA_TABLE_31}.')
-            # conn.commit()
+            if parquet_files:
+                total_rows = 0
+                for pf in parquet_files:
+                    chunk_df = pd.read_parquet(pf)
+                    if chunk_df.empty:
+                        continue
+                    chunk_df.columns = chunk_df.rename(columns={
+                        'record': 'ChampsId', 'redcap_repeat_instrument': 'RepeatInstrument',
+                        'redcap_repeat_instance': 'RepeatInstance',
+                        'field_name': 'FieldName', 'value': 'FieldValue'
+                    }).columns
+                    rows = fast_insert_with_executemany(conn, DATA_TABLE_31, 'stg', chunk_df, batch_size=1000)
+                    total_rows += rows
+                    logger.info(f'Loaded parquet file {pf}: {rows} rows')
+                    del chunk_df
+                    gc.collect()
+                logger.info(f'Finished db_load_project_3_1. Loaded {total_rows} rows from {len(parquet_files)} files.')
+            else:
+                df.columns = df.rename(columns={
+                    'record': 'ChampsId', 'redcap_repeat_instrument': 'RepeatInstrument',
+                    'redcap_repeat_instance': 'RepeatInstance',
+                    'field_name': 'FieldName', 'value': 'FieldValue'
+                }).columns
+                chunk_size = 1000
+                total_rows = 0
+                total_chunks = (len(df) + chunk_size - 1) // chunk_size
+                logger.info(f'Loading data in {total_chunks} chunks of {chunk_size} rows each...')
+                for i in range(0, len(df), chunk_size):
+                    chunk_df = df[i:i+chunk_size]
+                    rows_added = fast_insert_with_executemany(conn, DATA_TABLE_31, 'stg', chunk_df, batch_size=chunk_size)
+                    total_rows += rows_added
+                    logger.info(f'Loaded chunk {(i//chunk_size)+1}/{total_chunks} with {rows_added} rows.')
+                logger.info(f'Finished db_load_project_3_1. Loaded {total_rows} rows into Project 3.1 data table: {DATA_TABLE_31}.')
 
     except Exception as e:
         logger.error(f'Error in db_load_project_3_1.py: {e}')
