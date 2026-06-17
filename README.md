@@ -5,13 +5,15 @@ ETL pipeline for the CHAMPS HIV Project. Pulls data from REDCap, loads to SQL Se
 ## Architecture
 
 | Component | Details |
-|---|---|
-| Compute | AWS EC2 (`champs-dev-etl-reporting-ec2`) — ECS/ECR migration planned |
+|---|---|---|
+| Compute | ECS Fargate (per‑environment cluster) |
 | Database | RDS SQL Server (`hiv` schema) |
+| Networking | Per‑env SG (`champs-{env}-hiv-etl-sg`) — egress to RDS (port 1433) via `referenced_security_group_id` |
+| RDS SG Ingress | Owned by `champs-aws-champs-db` Terraform project — do not add ingress rules here |
 | Secrets | AWS Secrets Manager |
-| Logging | CloudWatch via watchtower (`/aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs`) |
+| Logging | CloudWatch (`/ecs/hiv-project-etl`) |
 | Notifications | Slack (`#logs`) — pipeline success/failure + weekly DQ digest |
-| Artifacts | S3 `champs-etl-artifacts/hiv_project_etl/` (state files, diagnostics) |
+| Artifacts | S3 `champs-{env}-etl-artifacts` (state files, diagnostics) |
 
 ### Pipeline Steps
 
@@ -104,9 +106,12 @@ APP_ENV=dev STEP=3 uv run python main.py   # Upserts
 APP_ENV=dev STEP=0 uv run python main.py
 ```
 
-On EC2, use the cron wrapper:
+On ECS Fargate (scheduled), the pipeline is triggered by EventBridge Scheduler. Create a run-task override to test:
 ```bash
-bash ec2_run.sh dev
+aws ecs run-task --cluster champs-{env}-hiv-etl --task-definition champs-{env}-hiv-etl:1 \
+  --launch-type FARGATE \
+  --network-configuration 'awsvpcConfiguration={subnets=[...],securityGroups=[sg-...],assignPublicIp=DISABLED}' \
+  --overrides '{"containerOverrides":[{"name":"champs-{env}-hiv-etl","environment":[{"name":"STEP","value":"0"}]}]}'
 ```
 
 ## Directory Structure
@@ -143,6 +148,34 @@ bash ec2_run.sh dev
 | 6.1 Enhanced Surveillance | EAV | `stg.HIVProject6_1_stg` | Repeat instruments |
 | Clinical Abstraction | EAV | `stg.HIVClinicalAbstract_stg` | |
 
+## Security Group Architecture
+
+Each environment has its own security group (`champs-{env}-hiv-etl-sg`) created and managed by this project's Terraform (`networking.tf`). The SG allows outbound HTTPS to the internet and outbound SQL Server (port 1433) to the RDS SG.
+
+The **ingress** rules on the RDS security group are **not** managed here. They are owned by the canonical DB project at [`champs-aws-champs-db`](https://github.com/champshealth/champs-aws-champs-db), which adds ingress rules for each ETL project's SG by name lookup:
+
+```
+data "aws_security_group" "hiv_etl" {
+  name = "champs-${var.environment}-hiv-etl-sg"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rds_from_hiv_etl" {
+  security_group_id            = aws_security_group.rds.id
+  referenced_security_group_id = data.aws_security_group.hiv_etl.id
+  from_port                    = 1433
+  to_port                      = 1433
+  ip_protocol                  = "tcp"
+}
+```
+
+This same pattern is also followed by the pathology ETL project (`integrated_pathogy_form_etl`) — all ETL-to-RDS ingress is centralized in the DB project to avoid split-ownership anti-patterns.
+
+To view the current ingress rules on the RDS SG:
+```bash
+aws ec2 describe-security-group-rules --filter Name="group-id",Values="$(terraform output -raw security_group_id)" \
+  --query 'SecurityGroupRules[?Direction==`ingress`].[SecurityGroupRuleId,Description]' --output table
+```
+
 ## Key Technical Details
 
 ### ChampsId Validation
@@ -164,14 +197,13 @@ uv run dbt test --profiles-dir . --target dev
 ```
 
 ### CloudWatch Logs
-| Log Group | Stream |
+| Log Group | Stream prefix |
 |---|---|
-| `/aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs` | Application ETL logs |
-| `/aws/ec2/champs-dev-etl-reporting-ec2/errors` | Error-level logs |
+| `/ecs/hiv-project-etl` | `{env}/` (e.g. `dev/618c2567...`) |
 
 ```bash
 # Tail live
-aws logs tail /aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs --follow --format short
+aws logs tail /ecs/hiv-project-etl --log-stream-name-prefix dev --follow --format short
 ```
 
 ## Troubleshooting
