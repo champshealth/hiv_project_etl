@@ -83,4 +83,7 @@ CPL_WIDGET_VIEW_NAME = "vw_HIVCPLWidgetAggregate"
 
 CONSENT_AUTH_VIEW_NAME = "vw_HIVConsentAuthorization"
 
+ETL_ARTIFACTS_BUCKET = "champs-etl-artifacts"
+ETL_ARTIFACTS_PREFIX = "hiv_project_etl"
+
 CONN = get_engine(ENV)
