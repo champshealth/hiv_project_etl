@@ -11,3 +11,5 @@ logs/
 venv/
 docs/.ai/
 include/ci_utils_local.py
+dbt/**/.user.yml
+scripts/__pycache__/

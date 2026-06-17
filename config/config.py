@@ -81,4 +81,6 @@ MITS_PROCEDURE_VIEW_NAME = "vw_HIVMITSProcedure"
 MITS_SPECIMEN_COLLECT_VIEW_NAME = "vw_HIVMitsSpecimensCollect"
 CPL_WIDGET_VIEW_NAME = "vw_HIVCPLWidgetAggregate"
 
+CONSENT_AUTH_VIEW_NAME = "vw_HIVConsentAuthorization"
+
 CONN = get_engine(ENV)
