@@ -12,6 +12,7 @@ from src.db_load_project_1_1 import db_load_project_1_1
 from src.db_load_project_3_1 import db_load_project_3_1
 from src.db_load_project_6_1 import db_load_project_6_1
 from src.db_upsert_consent_data import upsert_consent_records
+from src.db_upsert_consent_auth import upsert_consent_auth_records
 from src.db_upsert_mits_proc_data import upsert_mits_proc_data
 from src.db_upsert_death_notif_data import upsert_death_notif_data
 from src.db_upsert_mits_specimen_collect import upsert_mits_specimen_collect
@@ -41,7 +42,7 @@ def _run_dbt():
     )
     if needs_deps:
         deps = subprocess.run(
-            [_uv, "run", "dbt", "deps"],
+            [_uv, "run", "dbt", "deps", "--profiles-dir", "."],
             cwd=dbt_project_dir, capture_output=True, text=True,
         )
         if deps.returncode != 0:
@@ -51,7 +52,7 @@ def _run_dbt():
         logger.info("dbt packages are up to date, skipping dbt deps")
 
     process = subprocess.run(
-        [_uv, "run", "dbt", "run", "--target", ENV],
+        [_uv, "run", "dbt", "run", "--profiles-dir", ".", "--target", ENV],
         cwd=dbt_project_dir,
         capture_output=True,
         text=True,
@@ -116,6 +117,7 @@ if __name__ == '__main__':
 
         if step == 0 or step == 3:
             upsert_consent_records()
+            upsert_consent_auth_records()
             upsert_death_notif_data()
             upsert_mits_proc_data()
             upsert_mits_specimen_collect()

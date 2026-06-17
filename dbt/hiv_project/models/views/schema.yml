@@ -42,6 +42,54 @@ models:
       - name: Active
         description: "Record active status flag"
 
+  - name: vw_HIVConsentAuthorization
+    description: >
+      View for HIV study consent authorization data that feeds into the ConsentAuthorization table.
+      Only includes completed consent tracking forms with mits_type = 'CH00050'.
+    meta:
+      downstream_processes:
+        - name: db_upsert_consent_auth.py
+          type: Python ETL
+          description: >
+            Handles MERGE operations into ConsentAuthorization table including:
+            - Merging new/updated consent authorization records
+            - Deactivating records no longer in source
+          location: src/db_upsert_consent_auth.py
+          owner: Data Engineering Team
+    columns:
+      - name: Id
+        description: "Generated unique identifier using newid()"
+      - name: AuthId
+        description: "Right 5 characters of ChampsId"
+      - name: ChampsId
+        description: "CHAMPS case identifier"
+      - name: SiteId
+        description: "Internal site identifier (Site.Id)"
+      - name: Protocol
+        description: "Fixed value 'CH04724'"
+      - name: ConsentType
+        description: "Fixed value 'CH00050'"
+      - name: AuthorizationCode
+        description: "Fixed value 'CH00585'"
+      - name: Action
+        description: "Fixed value 'CH00582'"
+      - name: Active
+        description: "Record active status flag, fixed value 1"
+      - name: Valid
+        description: "Record valid flag, fixed value 1"
+      - name: VersionOfDataSpecification
+        description: "Fixed value '4.0.0'"
+      - name: EventDate
+        description: "Consent event date from elig_mits_consent_dt field"
+      - name: FileName
+        description: "Fixed value 'adult_hiv_study'"
+      - name: CreatedOn
+        description: "Record creation timestamp"
+      - name: ModifiedOn
+        description: "Record modification timestamp"
+      - name: UploadedOn
+        description: "Record upload timestamp"
+
   - name: vw_HIVDeathNotification
     description: "View for HIV study Death Notification data that feeds into the DeathNotification table"
     columns:
