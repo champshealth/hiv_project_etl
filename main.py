@@ -1,11 +1,13 @@
 import os
+import gc
+import sys
 import subprocess
 import datetime
+import tempfile
+import resource
 from config.config import (REDCAP_11_TOKENS, REDCAP_31_TOKENS, REDCAP_CA_TOKENS, REDCAP_61_TOKENS, 
                      REDCAP_EXPORT_FILE_11, REDCAP_EXPORT_FILE_31, REDCAP_EXPORT_FILE_CA, 
                      REDCAP_EXPORT_FILE_61, ENV, ETL_ARTIFACTS_BUCKET, ETL_ARTIFACTS_PREFIX)
-import tempfile
-import gc
 from src.redcap_api_export import redcap_api_export, redcap_export_flat_partitioned
 from src.logging_config import logger
 from src.db_load_project_1_1 import db_load_project_1_1
@@ -33,7 +35,7 @@ def _export_db_creds():
 
 def _run_dbt():
     dbt_project_dir = "dbt/hiv_project"
-    _uv = "/root/.local/bin/uv" if os.path.exists("/root/.local/bin/uv") else "uv"
+    _uv = "uv"
 
     lock_file = os.path.join(dbt_project_dir, "package-lock.yml")
     packages_file = os.path.join(dbt_project_dir, "packages.yml")
@@ -127,7 +129,9 @@ if __name__ == '__main__':
         logger.info('Finished main script')
         flush_champs_id_warnings(env=ENV, bucket=ETL_ARTIFACTS_BUCKET, prefix=ETL_ARTIFACTS_PREFIX)
         check_log_and_notify()
-        post_mesg(f"✅ ETL pipeline ({ENV}) completed successfully")
+        peak_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        peak_mb = peak_kb / 1024
+        post_mesg(f"✅ ETL pipeline ({ENV}) completed successfully — peak RSS: {peak_mb:.0f} MB")
     except Exception as e:
         logger.error(f'ERROR: {e}')
         check_log_and_notify()
