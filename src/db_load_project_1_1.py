@@ -5,6 +5,7 @@ import sqlalchemy as sa
 from config.config import CONN, DB_SCHEMA ,REDCAP_DATA_DICT_FILE_11, REDCAP_DATA_DICT_APPEND_FILE_11, DATA_DICT_TABLE_11, DATA_TABLE_11
 from src.create_data_dict_df import create_data_dict_df
 from src.logging_config import logger
+from src.data_quality import record_champs_id_warning
 import concurrent.futures
 import multiprocessing
 import re
@@ -208,6 +209,8 @@ def db_load_project_1_1(df: pd.DataFrame) -> pd.DataFrame:
                     f"Excluding {invalid_champs['ReportId'].nunique()} report(s) with invalid ChampsId "
                     f"(expected 4 letters + 5 digits):\n{invalid_summary.to_string(index=False)}"
                 )
+                for _, row in invalid_summary.iterrows():
+                    record_champs_id_warning(row['SiteId'], row['ChampsId'], int(row['ReportCount']))
                 df = df[~df['ReportId'].isin(invalid_champs['ReportId'])]
 
             # warning that catchment_id are missing in the data, provide a count of the missing catchment_id by site_id, ReportId

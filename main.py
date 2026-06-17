@@ -3,7 +3,7 @@ import subprocess
 import datetime
 from config.config import (REDCAP_11_TOKENS, REDCAP_31_TOKENS, REDCAP_CA_TOKENS, REDCAP_61_TOKENS, 
                      REDCAP_EXPORT_FILE_11, REDCAP_EXPORT_FILE_31, REDCAP_EXPORT_FILE_CA, 
-                     REDCAP_EXPORT_FILE_61, ENV)
+                     REDCAP_EXPORT_FILE_61, ENV, ETL_ARTIFACTS_BUCKET, ETL_ARTIFACTS_PREFIX)
 import tempfile
 import gc
 from src.redcap_api_export import redcap_api_export, redcap_export_flat_partitioned
@@ -19,6 +19,7 @@ from src.db_upsert_mits_specimen_collect import upsert_mits_specimen_collect
 from src.db_load_abstraction import db_load_clinical_abstraction
 from src.db_upsert_cplwidget_data import upsert_cpl_widget_aggregate
 from src.log_checker import check_log_and_notify
+from src.data_quality import flush_champs_id_warnings
 
 def _export_db_creds():
     from include.aws_secrets import get_db_credentials
@@ -124,6 +125,7 @@ if __name__ == '__main__':
             upsert_cpl_widget_aggregate()
 
         logger.info('Finished main script')
+        flush_champs_id_warnings(env=ENV, bucket=ETL_ARTIFACTS_BUCKET, prefix=ETL_ARTIFACTS_PREFIX)
         check_log_and_notify()
         post_mesg(f"✅ ETL pipeline ({ENV}) completed successfully")
     except Exception as e:
