@@ -1,3 +1,5 @@
+.terraform/
+*.terraform.lock.hcl
 .env
 data/*
 .DS_Store
