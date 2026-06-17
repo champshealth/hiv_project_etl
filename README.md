@@ -1,268 +1,190 @@
 # HIV Project Data Pipeline
 
-This project is a data pipeline that processes data from the HIV project. It pulls data from REDCap HIV projects, loads it into SQL Server (RDS), transforms it with dbt, and makes it available for Tableau reports (Decode Reports) and LabKey.
+ETL pipeline for the CHAMPS HIV Project. Pulls data from REDCap, loads to SQL Server (RDS), transforms with dbt, and surfaces data for Tableau (Decode Reports) and LabKey.
 
 ## Architecture
 
-The pipeline runs on **AWS EC2 (t3.micro, 916 MB RAM)** with **RDS SQL Server** as the target database. Secrets are managed via **AWS Secrets Manager**. Logging goes to **CloudWatch** via watchtower, with failure/success notifications sent to **Slack**.
+| Component | Details |
+|---|---|
+| Compute | AWS EC2 (`champs-dev-etl-reporting-ec2`) — ECS/ECR migration planned |
+| Database | RDS SQL Server (`hiv` schema) |
+| Secrets | AWS Secrets Manager |
+| Logging | CloudWatch via watchtower (`/aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs`) |
+| Notifications | Slack (`#logs`) — pipeline success/failure + weekly DQ digest |
+| Artifacts | S3 `champs-etl-artifacts/hiv_project_etl/` (state files, diagnostics) |
 
-### Memory Constraints
+### Pipeline Steps
 
-The t3.micro instance has only **916 MB RAM** (~550 MB available after OS overhead). The REDCap flat export for Project 3.1 returns ~3974 records × 2080 columns, which requires **~1.7 GB peak memory** in a single request. The pipeline partitions this into record batches (`batch_size=50`, peak ~629 MB).
+The pipeline runs in 3 steps to manage memory (Project 3.1 flat export requires ~1.7 GB peak):
 
-The pipeline **must run in 3 separate steps** to avoid OOM:
-- `STEP=1`: REDCap export + LOAD
-- `STEP=2`: dbt transformations
-- `STEP=3`: UPSERTS (consent, death, MITS, specimen, CPL)
+| Step | Command | What it does |
+|---|---|---|
+| 1 | `STEP=1` | REDCap API export → load to staging tables |
+| 2 | `STEP=2` | dbt run (19 models: staging, tables, views) |
+| 3 | `STEP=3` | Upserts: ConsentTracking, ConsentAuthorization, DeathNotification, MITSProcedure, MITSSpecimensCollected, CPLWidgetAggregate |
+
+Run all steps: `STEP=0` (or omit `STEP`).
+
+### Data Pipeline Flow
+```mermaid
+graph TD
+    REDCAP11[REDCap 1.1 Adult HIV] -->|EAV export| ETL[Python ETL]
+    REDCAP31[REDCap 3.1 Follow-up] -->|Flat partitioned| ETL
+    REDCAP61[REDCap 6.1 Surveillance] -->|EAV export| ETL
+    REDCAP_CA[REDCap Clinical Abstraction] -->|EAV export| ETL
+
+    ETL -->|Load staging| STG[(SQL Server stg.*)]
+    STG -->|dbt run| HIV[(SQL Server hiv.*)]
+
+    HIV -->|Upsert| CONSENT[ConsentTracking / ConsentAuthorization]
+    HIV -->|Upsert| MITS[MITS Procedure / Specimens]
+    HIV -->|Upsert| OTHER[DeathNotification / CPLWidget]
+
+    HIV -->|Views| TABLEAU[Tableau / Decode Reports]
+    HIV -->|Views| LABKEY[LabKey]
+
+    ETL -->|Invalid ChampsId warnings| DQ[data_quality.py]
+    DQ -->|Weekly digest| SLACK[Slack #logs]
+    DQ -->|State| S3[S3 champs-etl-artifacts]
+```
 
 ## Environment Setup
 
 ### Prerequisites
 
-- **Python 3.12+** with [uv](https://docs.astral.sh/uv/) package manager
-- **Git**
+- **Python 3.12+** with [uv](https://docs.astral.sh/uv/)
 - **ODBC Driver 18 for SQL Server**
-- **AWS CLI** with SSO profile (`CHAMPS-AWS-ADMINISTRATOR-DEV` for dev)
-- **Access to REDCap API** with required tokens for projects 1.1, 3.1, 6.1, and CA
-- **AWS Secrets Manager** secrets in the appropriate account
+- **AWS CLI** with SSO configured
+- REDCap API tokens + Secrets Manager access
 
-### Installation Steps
+### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url>
-   cd hiv_project_etl
-   ```
+```bash
+git clone git@github.com:champshealth/hiv_project_etl.git
+cd hiv_project_etl
+uv sync
+```
 
-2. **Install uv** (if not already installed)
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
+**ODBC Driver (macOS):**
+```bash
+brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
+brew install msodbcsql18 mssql-tools18
+```
 
-3. **Install Python dependencies**
-   ```bash
-   uv sync
-   ```
+**ODBC Driver (Amazon Linux / ECS container):**
+```bash
+curl https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/mssql-release.repo
+yum install -y msodbcsql18
+```
 
-4. **Install ODBC Driver for SQL Server**
-   - **macOS**:
-     ```bash
-     brew tap microsoft/mssql-release https://github.com/Microsoft/homebrew-mssql-release
-     brew update
-     brew install msodbcsql18 mssql-tools18
-     ```
-   - **Amazon Linux** (EC2):
-     ```bash
-     curl https://packages.microsoft.com/config/rhel/9/prod.repo | tee /etc/yum.repos.d/mssql-release.repo
-     yum install -y msodbcsql18
-     ```
+### AWS Credentials
 
-5. **Configure AWS credentials**
-   The pipeline uses AWS Secrets Manager for all credentials. No `.env` file is needed.
-   ```bash
-   aws sso login --profile CHAMPS-AWS-ADMINISTRATOR-DEV
-   export AWS_PROFILE=CHAMPS-AWS-ADMINISTRATOR-DEV
-   ```
+No `.env` file needed — all credentials come from Secrets Manager.
 
-   The environment is controlled by the `ENV` environment variable:
-   ```bash
-   export ENV=dev   # dev / stg / prod
-   ```
+```bash
+aws sso login --profile CHAMPS-AWS-ADMINISTRATOR-DEV
+export AWS_PROFILE=CHAMPS-AWS-ADMINISTRATOR-DEV
+export APP_ENV=dev   # dev | prod
+```
 
-   | Env | AWS Account ID | Secret Name |
-   |-----|---------------|-------------|
-   | dev | 192914852225 | champs/dev/rds_hiv_portal |
-   | stg | 298660930181 | champs/stg/rds_hiv_portal |
-   | prod | 600942988942 | champs/prod/rds_hiv_portal |
-
-6. **Verify the setup**
-   ```bash
-   uv run python test_db_connection.py
-   ```
+| Env | AWS Account | DB Secret |
+|---|---|---|
+| dev | 192914852225 | `champs/dev/rds_hiv_portal` |
+| prod | 600942988942 | `champs/prod/rds_hiv_portal` |
 
 ### Running the Pipeline
 
 ```bash
-# Step 1: REDCap export + load to staging
-STEP=1 uv run python main.py
+# Individual steps
+APP_ENV=dev STEP=1 uv run python main.py   # Export + load
+APP_ENV=dev STEP=2 uv run python main.py   # dbt
+APP_ENV=dev STEP=3 uv run python main.py   # Upserts
 
-# Step 2: dbt transformations
-STEP=2 uv run python main.py
-
-# Step 3: Upserts (consent, death, MITS, specimen, CPL)
-STEP=3 uv run python main.py
-
-# Full pipeline (sequential) — NOT recommended on t3.micro, use ec2_run.sh
-STEP=0 uv run python main.py
+# Full pipeline
+APP_ENV=dev STEP=0 uv run python main.py
 ```
 
-On EC2, use the wrapper script for cron scheduling:
+On EC2, use the cron wrapper:
 ```bash
 bash ec2_run.sh dev
 ```
 
-The `ec2_run.sh` script:
-1. Exports DB credentials from Secrets Manager into environment variables
-2. Runs the 3 steps sequentially with garbage collection between steps
-3. Sends Slack notification on completion/failure
+## Directory Structure
 
-### Data Pipeline Flow
-```mermaid
-graph TD
-    %% Data Sources
-    REDCAP11[REDCap Project 1.1] -->|API Export| PYTHON_ETL[Python ETL Process]
-    REDCAP31[REDCap Project 3.1] -->|API Export| PYTHON_ETL
-    REDCAP61[REDCap Project 6.1] -->|API Export| PYTHON_ETL
-    REDCAP_CA[REDCap Clinical Abstraction] -->|API Export| PYTHON_ETL
-
-    %% Python Processing
-    PYTHON_ETL -->|Process and Load| RAW_DB[SQL Server Raw Data]
-
-    %% dbt Transformations
-    subgraph "dbt Transformations"
-        direction TB
-        STG[Staging Models] -->|Transform| INT[Intermediate Models]
-        INT -->|Aggregate| MART[Mart Models]
-    end
-
-    %% Data Flow
-    RAW_DB --> STG
-    MART --> REPORTING[Reporting Layer]
-
-    %% Data Quality
-    DBT_TESTS[dbt Tests] --> STG
-    DBT_TESTS --> INT
-    DBT_TESTS --> MART
-
-    %% Data Destinations
-    REPORTING -->|Tableau| DECODE_REPORTS[Decode Reports]
-    REPORTING -->|LabKey API| LABKEY[LabKey System]
-
-    %% Additional Data Processing
-    subgraph "Python Data Processing"
-        CONSENT[Consent Records]
-        DEATH[Death Notifications]
-        MITS[MITS Processing]
-        SPECIMEN[Specimen Collection]
-        CPL[CPL Widget]
-
-        CONSENT & DEATH & MITS & SPECIMEN & CPL -->|Upsert| RAW_DB
-    end
-
-    %% Styling
-    classDef source fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef process fill:#bbf,stroke:#333,stroke-width:2px;
-    classDef storage fill:#bfb,stroke:#333,stroke-width:2px;
-    classDef destination fill:#fbb,stroke:#333,stroke-width:2px;
-
-    class REDCAP11,REDCAP31,REDCAP61,REDCAP_CA source;
-    class PYTHON_ETL,STG,INT,MART,CONSENT,DEATH,MITS,SPECIMEN,CPL process;
-    class RAW_DB,REPORTING storage;
-    class DECODE_REPORTS,LABKEY destination;
-```
-
-### Directory Structure
 ```
 .
-├── src/              # source code for the project
-├── data/             # data files
-├── logs/             # log files
-├── config/           # configuration (SM-backed, no .env)
-├── include/          # utility modules
-├── dbt/              # dbt project files
-│   └── hiv_project/  # main dbt project directory
-│       ├── models/   # dbt transformation models
-│       ├── macros/   # reusable SQL macros
-│       ├── tests/    # data tests
-│       └── profiles.yml  # in-project dbt profile
-├── scripts/          # diagnostic and utility scripts
-├── ec2_run.sh        # EC2 cron wrapper (sequential steps)
-├── pyproject.toml    # Python dependencies (uv)
-├── uv.lock           # Locked dependency versions
-└── docs/             # Generated dbt documentation
-```
-
-### DBT Project
-
-The dbt project is in `dbt/hiv_project/`. The profile is stored **in-project** (`profiles.yml`) rather than at `~/.dbt/profiles.yml`. Connection credentials are injected via environment variables set by `ec2_run.sh` or `main.py:_export_db_creds()`.
-
-To run dbt manually:
-```bash
-cd dbt/hiv_project
-uv run dbt deps    # Only needed when packages.yml changes
-uv run dbt run
-uv run dbt test
-```
-
-### Deployment
-
-Build and deploy the artifact to EC2 via SSM:
-
-```bash
-# Build tar (--no-xattrs prevents macOS extended attribute warnings on Linux)
-tar --no-xattrs -czf hiv_project_etl.tar.gz \
-  --exclude='__pycache__' --exclude='.git' --exclude='.venv' \
-  --exclude='*.pyc' --exclude='.DS_Store' \
-  .
-
-# Upload to S3
-aws s3 cp hiv_project_etl.tar.gz s3://champs-aws-etl-scripts-dev/
-
-# Deploy on EC2 via SSM
-aws ssm send-command \
-  --document-name "AWS-RunShellScript" \
-  --targets "Key=tag:Name,Values=CHAMPS-EC2-REDCAP-ETL-DEV" \
-  --parameters 'commands=["cd /mnt/etl && sudo -u ssm-user aws s3 cp s3://champs-aws-etl-scripts-dev/hiv_project_etl.tar.gz - | sudo -u ssm-user tar xzf -"]' \
-  --comment "Deploy hiv_project_etl"
+├── src/                        # ETL source modules
+│   ├── db_load_project_*.py    # REDCap staging loaders
+│   ├── db_upsert_*.py          # Target table upserts
+│   ├── data_quality.py         # ChampsId DQ warning + weekly Slack digest
+│   ├── log_checker.py          # Post-run log error checker
+│   └── ddl_definitions/        # SQL DDL reference files
+├── config/
+│   ├── config.py               # All constants (SM-backed, no .env)
+│   └── redcap_tokens.yaml      # Token key mapping
+├── include/                    # Shared utilities (AWS, Slack, CI)
+├── dbt/hiv_project/
+│   ├── models/views/           # dbt view models (19 total)
+│   ├── profiles.yml            # In-project profile (uses DB_* env vars)
+│   └── dbt_project.yml
+├── scripts/                    # Diagnostic / test scripts
+├── data_dictionaries/          # REDCap data dictionary CSVs
+├── ec2_run.sh                  # EC2 cron wrapper
+├── pyproject.toml              # Python dependencies (uv)
+└── uv.lock
 ```
 
 ## REDCap Projects
 
-| Project | Data Format | Sites | Staging Table | Notes |
-|---------|------------|-------|---------------|-------|
-| 1.1 - Adult HIV Study | EAV | Kenya, Mozambique, Sierra Leone, South Africa | `stg.HIVProject1_1_stg` | Has `site_id` field |
-| 3.1 - Adult HIV Follow-up | **Flat** (partitioned) | All sites (single token) | `stg.HIVProject3_1_stg` | Partitioned by record batches; `site_id` sourced from `hiv_project_3_1` |
-| 6.1 - Enhanced HIV Surveillance | EAV | All sites | `stg.HIVProject6_1_stg` | Repeat instruments/instances |
-| Clinical Abstraction | EAV | All sites | `stg.HIVClinicalAbstract_stg` | |
-
-**Note**: Project 3.1 returns **~3974 records × 2080 columns** in flat mode. REDCap ignores `page`/`pageSize` for this project, so the data is fetched by partitioning by record IDs via the `records[]` parameter (`batch_size=50`).
+| Project | Format | Staging Table | Notes |
+|---|---|---|---|
+| 1.1 Adult HIV Study | EAV | `stg.HIVProject1_1_stg` | ChampsId validated (`^[A-Za-z]{4}\d{5}$`) |
+| 3.1 Adult HIV Follow-up | Flat (partitioned) | `stg.HIVProject3_1_stg` | `batch_size=50` records; ~3974 records × 2080 cols |
+| 6.1 Enhanced Surveillance | EAV | `stg.HIVProject6_1_stg` | Repeat instruments |
+| Clinical Abstraction | EAV | `stg.HIVClinicalAbstract_stg` | |
 
 ## Key Technical Details
 
-### Memory Optimization
-- Project 3.1 flat export is partitioned by record ID batches (`batch_size=50`)
-- 3 pipeline steps run as separate Python processes to free memory between phases
-- Peak memory: ~629 MB (vs ~1.7 GB for a single unpaginated call)
+### ChampsId Validation
+Project 1.1 records are validated on load: `ChampsId` must match `^[A-Za-z]{4}\d{5}$` (4 letters + 5 digits). Invalid records are excluded from staging with a `WARNING` log. Invalid IDs are accumulated across runs and posted as a **weekly Slack digest** to `#logs` (state persisted in S3 at `champs-etl-artifacts/hiv_project_etl/champs_id_warnings_state.json`).
 
-### South Africa site_id Workaround
-Three records (IDs 992, 1497, 3081-257) have an empty `site_id`. The REDCap project does not include `site_id` as an export field. The pipeline sets `site_id = "001"` for these records in the EAV path.
+### Memory Management
+- Project 3.1 flat export partitioned into `batch_size=50` record batches (~629 MB peak vs ~1.7 GB unpaginated)
+- 3 pipeline steps run as separate invocations to release memory between phases
 
-### Split Execution
-The pipeline splits into 3 steps to fit the t3.micro's 916 MB RAM:
-- **STEP=1**: Export REDCap data + load to staging tables
-- **STEP=2**: dbt run (staging → intermediate → mart)
-- **STEP=3**: Upserts (consent, death, MITS, specimen, CPL)
+### South Africa site_id
+Three records (IDs 992, 1497, 3081-257) have an empty `site_id`. The pipeline defaults to `site_id = "001"` for these.
 
-### CloudWatch Logging
-Logs are streamed to CloudWatch Log group `/champs/etl/hiv-project` with environment-specific log streams.
+### dbt Profile
+Stored in-project at `dbt/hiv_project/profiles.yml`. Credentials injected via `DB_*` environment variables set by `main.py:_export_db_creds()`. Always pass `--profiles-dir .` when running dbt manually:
+```bash
+cd dbt/hiv_project
+uv run dbt run --profiles-dir . --target dev
+uv run dbt test --profiles-dir . --target dev
+```
 
-### Slack Notifications
-Pipeline start/complete/failure notifications are sent via Slack webhook (token/channel from Secrets Manager).
+### CloudWatch Logs
+| Log Group | Stream |
+|---|---|
+| `/aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs` | Application ETL logs |
+| `/aws/ec2/champs-dev-etl-reporting-ec2/errors` | Error-level logs |
+
+```bash
+# Tail live
+aws logs tail /aws/ec2/champs-dev-etl-reporting-ec2/etl-jobs --follow --format short
+```
 
 ## Troubleshooting
 
-### OOM / SSM Agent Unreachable
-If the EC2 instance runs out of memory, the SSM agent may be killed. Commands will show as `Undeliverable`. Reboot the instance to restore SSM connectivity, then ensure the pipeline runs via `ec2_run.sh` (sequential steps).
-
 ### dbt Connection Fails
-- Verify the SM secret has correct credentials
+- Confirm `DB_*` env vars are set (run `STEP=2` only after `_export_db_creds()` has run, or set manually)
 - Check `encrypt: yes` and `trust_cert: yes` in `profiles.yml`
 - ODBC Driver 18 must be installed
 
 ### REDCap API Errors
-- Verify API tokens in the SM secret
-- Check REDCap API URL accessibility
-- `site_id` workaround may need updating if new empty-site_id records appear
+- Verify tokens in the SM secret (`champs/<env>/rds_hiv_portal`)
+- Check `site_id` workaround if new empty-site_id records appear in Project 1.1
 
-### tar Warnings on Linux
-On macOS, always use `--no-xattrs` when creating the tar archive to avoid `LIBARCHIVE.xattr` warnings on Linux EC2.
+### OOM on EC2
+- Use `ec2_run.sh` which runs steps sequentially with GC between them
+- Do not run `STEP=0` on memory-constrained instances
