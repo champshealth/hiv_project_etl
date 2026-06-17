@@ -7,6 +7,7 @@ from src.create_data_dict_df import create_data_dict_df
 from src.logging_config import logger
 import concurrent.futures
 import multiprocessing
+import re
 import pyodbc
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text as sa_text
@@ -197,6 +198,18 @@ def db_load_project_1_1(df: pd.DataFrame) -> pd.DataFrame:
             df = df.astype({'SiteId': str,'CatchmentId': str, 'ReportId': str, 'ChampsId':str ,'FieldName': str, 'FieldValue': str}) 
             df = df[['SiteId','CatchmentId', 'ReportId', 'ChampsId', 'FieldName', 'FieldValue']]
          
+            # validate ChampsId format: must be exactly 4 letters followed by 5 digits
+            _champs_id_pattern = re.compile(r'^[A-Za-z]{4}\d{5}$')
+            invalid_champs = df[~df['ChampsId'].apply(lambda x: bool(_champs_id_pattern.match(str(x))))]
+            if not invalid_champs.empty:
+                invalid_summary = invalid_champs.groupby(['SiteId', 'ChampsId'])['ReportId'].nunique().reset_index()
+                invalid_summary.columns = ['SiteId', 'ChampsId', 'ReportCount']
+                logger.warning(
+                    f"Excluding {invalid_champs['ReportId'].nunique()} report(s) with invalid ChampsId "
+                    f"(expected 4 letters + 5 digits):\n{invalid_summary.to_string(index=False)}"
+                )
+                df = df[~df['ReportId'].isin(invalid_champs['ReportId'])]
+
             # warning that catchment_id are missing in the data, provide a count of the missing catchment_id by site_id, ReportId
             missing_catchment_id = df[df['CatchmentId'] == '']
             if not missing_catchment_id.empty:
