@@ -1,13 +1,17 @@
 import os
 import gc
 import sys
+import io
+import tarfile
 import subprocess
 import datetime
 import tempfile
 import resource
+import boto3
 from config.config import (REDCAP_11_TOKENS, REDCAP_31_TOKENS, REDCAP_CA_TOKENS, REDCAP_61_TOKENS, 
                      REDCAP_EXPORT_FILE_11, REDCAP_EXPORT_FILE_31, REDCAP_EXPORT_FILE_CA, 
-                     REDCAP_EXPORT_FILE_61, ENV, ETL_ARTIFACTS_BUCKET, ETL_ARTIFACTS_PREFIX)
+                     REDCAP_EXPORT_FILE_61, ENV, ETL_ARTIFACTS_BUCKET, ETL_ARTIFACTS_PREFIX,
+                     JOB_ID, DATA_DIR)
 from src.redcap_api_export import redcap_api_export, redcap_export_flat_partitioned
 from src.logging_config import logger
 from src.db_load_project_1_1 import db_load_project_1_1
@@ -22,6 +26,19 @@ from src.db_load_abstraction import db_load_clinical_abstraction
 from src.db_upsert_cplwidget_data import upsert_cpl_widget_aggregate
 from src.log_checker import check_log_and_notify
 from src.data_quality import flush_champs_id_warnings
+
+def _upload_intermediates_s3() -> str:
+    s3_key = f"{ETL_ARTIFACTS_PREFIX}/intermediates/{JOB_ID}.tar.gz"
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        tar.add(DATA_DIR, arcname=os.path.basename(DATA_DIR))
+    buf.seek(0)
+    s3 = boto3.client("s3")
+    s3.upload_fileobj(buf, ETL_ARTIFACTS_BUCKET, s3_key)
+    s3_uri = f"s3://{ETL_ARTIFACTS_BUCKET}/{s3_key}"
+    logger.info("Uploaded intermediates to %s", s3_uri)
+    return s3_uri
+
 
 def _export_db_creds():
     from include.aws_secrets import get_db_credentials
@@ -134,6 +151,7 @@ if __name__ == '__main__':
         post_mesg(f"✅ ETL pipeline ({ENV}) completed successfully — peak RSS: {peak_mb:.0f} MB")
     except Exception as e:
         logger.error(f'ERROR: {e}')
+        s3_path = _upload_intermediates_s3()
         check_log_and_notify()
-        post_mesg(f"❌ ETL pipeline ({ENV}) failed: {e}")
+        post_mesg(f"❌ ETL pipeline ({ENV}) failed: {e}\nIntermediates: {s3_path}")
         raise e
