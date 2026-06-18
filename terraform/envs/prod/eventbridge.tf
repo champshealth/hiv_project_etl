@@ -1,7 +1,7 @@
 resource "aws_scheduler_schedule" "main" {
   name                = local.schedule_name
   schedule_expression = "cron(0 10 * * ? *)"
-  state               = "DISABLED"
+  state               = "ENABLED"
 
   flexible_time_window {
     mode = "OFF"
