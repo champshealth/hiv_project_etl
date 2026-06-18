@@ -100,7 +100,7 @@ resource "aws_iam_role_policy" "task_logs" {
           "logs:PutLogEvents",
           "logs:FilterLogEvents",
         ]
-        Resource = aws_cloudwatch_log_group.main.arn
+        Resource = "${aws_cloudwatch_log_group.main.arn}:*"
       }
     ]
   })
